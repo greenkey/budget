@@ -1,8 +1,9 @@
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
+from src.data import Account, LedgerItem, LedgerItemType
 
-from src.extract import Account, ExcelImporter, FinecoImporter, LedgerItem, LedgerItemType
+from src.extract import ExcelImporter, FinecoImporter
 
 
 def test_excel_importer():
