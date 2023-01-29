@@ -37,13 +37,17 @@ class LedgerItem:
         ...  # TODO: (NTH, similar to the categorization)
 
     @property
-    def amount_EUR(self):
+    def amount_EUR(self) -> Decimal:
         ...  # TODO: get the fx from the database
 
     @property
     def tx_id(self) -> str:
         # iso timestamp, plus sequence
         ...
+
+    def __lt__(self, other: 'LedgerItem') -> bool:
+        # implement a check against hash to avoid duplicates
+        return self.tx_datetime < other.tx_datetime
 
 
 class Importer(abc.ABC):
@@ -66,8 +70,49 @@ class ExcelImporter(Importer):
 
 
 class FinecoImporter(ExcelImporter):
+    skip_lines = 8
+    header_line = 7
+
     def __init__(self, source_file: str):
         self.source_file = source_file
 
     def get_ledger_items(self) -> LedgerItem:
-        ...
+        data = list(self.get_records_from_file())
+        # get header
+        header = data[self.header_line]
+        # remove lines to skip
+        data = data[self.skip_lines:]
+        for line in data:
+            # construct a dict with the header as keys
+            line_dict = dict(zip(header, line))
+
+            # convert the date from a string like '29/01/2023' to a date object
+            tx_date = datetime.strptime(line_dict['Data'], '%d/%m/%Y').date()
+
+            if line_dict['Entrate']:
+                # it's an income
+                amount = Decimal(line_dict['Entrate'])
+                ledger_item_type = LedgerItemType.INCOME
+            elif line_dict['Uscite']:
+                # it's an expense
+                amount = Decimal(line_dict['Uscite'])
+                ledger_item_type = LedgerItemType.EXPENSE
+
+            # convert the description
+            description = ",".join(
+                [line_dict['Descrizione'], line_dict['Descrizione_Completa']]
+            )
+            # convert the account
+            account = Account.DEFAULT
+
+            # construct the LedgerItem
+            ledger_item = LedgerItem(
+                tx_date=tx_date,
+                tx_datetime=datetime.combine(tx_date, datetime.min.time()),
+                amount=amount,
+                currency='EUR',
+                description=description,
+                account=account,
+                ledger_item_type=ledger_item_type,
+            )
+            yield ledger_item
