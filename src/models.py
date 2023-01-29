@@ -1,4 +1,3 @@
-
 import dataclasses
 from datetime import date, datetime
 from decimal import Decimal
@@ -7,13 +6,13 @@ from typing import Any, Optional
 
 
 class Account(Enum):
-    DEFAULT = 'default'
+    DEFAULT = "default"
 
 
 class LedgerItemType(Enum):
-    TRANSFER = 'transfer'
-    EXPENSE = 'expense'
-    INCOME = 'income'
+    TRANSFER = "transfer"
+    EXPENSE = "expense"
+    INCOME = "income"
 
 
 @dataclasses.dataclass
@@ -38,7 +37,7 @@ class LedgerItem:
     #     # iso timestamp, plus sequence
     #     ...
 
-    def __lt__(self, other: 'LedgerItem') -> bool:
+    def __lt__(self, other: "LedgerItem") -> bool:
         # implement a check against hash to avoid duplicates
         return self.tx_datetime < other.tx_datetime
 

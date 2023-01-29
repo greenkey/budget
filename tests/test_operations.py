@@ -1,8 +1,11 @@
 import sqlite3
-from src import models, operations
+from datetime import date, datetime
+from decimal import Decimal
 
-from tests.factories import LedgerItemFactory
 import pytest
+
+from src import migrations, models, operations, query
+from tests.factories import LedgerItemFactory
 
 
 def test_store_ledger_items(db: sqlite3.Connection):
@@ -12,30 +15,26 @@ def test_store_ledger_items(db: sqlite3.Connection):
     ]
     operations.store_ledger_items(ledger_items, db=db)
 
-    result = db.execute('SELECT * FROM ledger_items')
-    print(result)
+    result = query.query("SELECT * FROM ledger_items", db=db)
+    assert sorted(
+        models.LedgerItem(
+            tx_date=date.fromisoformat(item["tx_date"]),
+            tx_datetime=datetime.fromisoformat(item["tx_datetime"]),
+            amount=Decimal(item["amount"]),
+            currency=item["currency"],
+            description=item["description"],
+            account=models.Account(item["account"]),
+            ledger_item_type=models.LedgerItemType(item["ledger_item_type"]),
+        )
+        for item in result
+    ) == sorted(ledger_items)
 
 
 # pytest fixture to create a temporary database
 @pytest.fixture
 def db():
-    db_path = ':memory:'
+    db_path = ":memory:"
     # open sqlite database
     with sqlite3.connect(db_path) as conn:
-        init_db(conn)
+        migrations.migrate(conn)
         yield conn
-
-
-def init_db(conn):
-    # create tables if they don't exist
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS ledger_items (
-            id INTEGER PRIMARY KEY,
-            tx_date DATE,
-            tx_datetime DATETIME,
-            amount DECIMAL,
-            currency TEXT,
-            description TEXT,
-            account TEXT,
-            ledger_item_type TEXT
-        )''')
