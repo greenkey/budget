@@ -1,20 +1,18 @@
 import abc
-from dataclasses import dataclass
 from datetime import datetime, date
 from decimal import Decimal
-from enum import Enum
 from pathlib import Path
 import openpyxl
-from typing import Generator, Optional, Union
+from typing import Generator, Union
 
-from src.data import Account, LedgerItem, LedgerItemType
+from src import data
 
 
 class Importer(abc.ABC):
     def __init__(self, file_path: Union[str, Path]):
         self.source_file = file_path
 
-    def get_ledger_items(self) -> Generator[LedgerItem, None, None]:
+    def get_ledger_items(self) -> Generator[data.LedgerItem, None, None]:
         raise NotImplementedError()
 
 
@@ -36,13 +34,13 @@ class FinecoImporter(ExcelImporter):
     def __init__(self, source_file: str):
         self.source_file = source_file
 
-    def get_ledger_items(self) -> Generator[LedgerItem, None, None]:
-        data = list(self.get_records_from_file())
+    def get_ledger_items(self) -> Generator[data.LedgerItem, None, None]:
+        records = list(self.get_records_from_file())
         # get header
-        header = data[self.header_line]
+        header = records[self.header_line]
         # remove lines to skip
-        data = data[self.skip_lines:]
-        for line in data:
+        records = records[self.skip_lines:]
+        for line in records:
             # construct a dict with the header as keys
             line_dict = dict(zip(header, line))
 
@@ -52,21 +50,21 @@ class FinecoImporter(ExcelImporter):
             if line_dict['Entrate']:
                 # it's an income
                 amount = Decimal(line_dict['Entrate'])
-                ledger_item_type = LedgerItemType.INCOME
+                ledger_item_type = data.LedgerItemType.INCOME
             elif line_dict['Uscite']:
                 # it's an expense
                 amount = Decimal(line_dict['Uscite'])
-                ledger_item_type = LedgerItemType.EXPENSE
+                ledger_item_type = data.LedgerItemType.EXPENSE
 
             # convert the description
             description = ",".join(
                 [line_dict['Descrizione'], line_dict['Descrizione_Completa']]
             )
             # convert the account
-            account = Account.DEFAULT
+            account = data.Account.DEFAULT
 
-            # construct the LedgerItem
-            ledger_item = LedgerItem(
+            # construct the data.LedgerItem
+            ledger_item = data.LedgerItem(
                 tx_date=tx_date,
                 tx_datetime=datetime.combine(tx_date, datetime.min.time()),
                 amount=amount,

@@ -1,9 +1,9 @@
 
-from dataclasses import dataclass
+import dataclasses
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional
 
 
 class Account(Enum):
@@ -16,7 +16,7 @@ class LedgerItemType(Enum):
     INCOME = 'income'
 
 
-@dataclass
+@dataclasses.dataclass
 class LedgerItem:
     tx_date: date
     tx_datetime: datetime  # it's the time in which the transaction wasfirst registered
@@ -41,3 +41,18 @@ class LedgerItem:
     def __lt__(self, other: 'LedgerItem') -> bool:
         # implement a check against hash to avoid duplicates
         return self.tx_datetime < other.tx_datetime
+
+
+def asdict(item: Any) -> dict[str, Any]:
+    """
+    Convert a dataclass to a dict, converting Decimal and Enum to str and int respectively
+    """
+    result = {}
+    for k, v in dataclasses.asdict(item).items():
+        if isinstance(v, Decimal):
+            result[k] = str(v)
+        elif isinstance(v, Enum):
+            result[k] = v.value
+        else:
+            result[k] = v
+    return result
