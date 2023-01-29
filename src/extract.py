@@ -5,14 +5,14 @@ from pathlib import Path
 import openpyxl
 from typing import Generator, Union
 
-from src import data
+from src import models
 
 
 class Importer(abc.ABC):
     def __init__(self, file_path: Union[str, Path]):
         self.source_file = file_path
 
-    def get_ledger_items(self) -> Generator[data.LedgerItem, None, None]:
+    def get_ledger_items(self) -> Generator[models.LedgerItem, None, None]:
         raise NotImplementedError()
 
 
@@ -34,7 +34,7 @@ class FinecoImporter(ExcelImporter):
     def __init__(self, source_file: str):
         self.source_file = source_file
 
-    def get_ledger_items(self) -> Generator[data.LedgerItem, None, None]:
+    def get_ledger_items(self) -> Generator[models.LedgerItem, None, None]:
         records = list(self.get_records_from_file())
         # get header
         header = records[self.header_line]
@@ -50,21 +50,21 @@ class FinecoImporter(ExcelImporter):
             if line_dict['Entrate']:
                 # it's an income
                 amount = Decimal(line_dict['Entrate'])
-                ledger_item_type = data.LedgerItemType.INCOME
+                ledger_item_type = models.LedgerItemType.INCOME
             elif line_dict['Uscite']:
                 # it's an expense
                 amount = Decimal(line_dict['Uscite'])
-                ledger_item_type = data.LedgerItemType.EXPENSE
+                ledger_item_type = models.LedgerItemType.EXPENSE
 
             # convert the description
             description = ",".join(
                 [line_dict['Descrizione'], line_dict['Descrizione_Completa']]
             )
             # convert the account
-            account = data.Account.DEFAULT
+            account = models.Account.DEFAULT
 
             # construct the data.LedgerItem
-            ledger_item = data.LedgerItem(
+            ledger_item = models.LedgerItem(
                 tx_date=tx_date,
                 tx_datetime=datetime.combine(tx_date, datetime.min.time()),
                 amount=amount,

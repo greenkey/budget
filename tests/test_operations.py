@@ -1,5 +1,5 @@
 import sqlite3
-from src import data, operations
+from src import models, operations
 
 from tests.factories import LedgerItemFactory
 import pytest

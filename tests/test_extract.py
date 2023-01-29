@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
-from src import data, extract
+from src import extract, models
 
 
 def test_excel_importer():
@@ -35,22 +35,22 @@ def test_fineco_importer():
         line.split(',') for line in fineco_test_data.splitlines()]
     ledger_items = list(fineco_importer.get_ledger_items())
     assert sorted(ledger_items) == sorted([
-        data.LedgerItem(
+        models.LedgerItem(
             tx_date=date(2023, 1, 29),
             tx_datetime=datetime(2023, 1, 29, 0, 0),
             amount=Decimal('-3.00'),
             currency='EUR',
             description='MULTIFUNZIONE CONTACTLESS CHIP 4030 **** **** 7737,CLESS TICKET ATM MILANO',
-            account=data.Account.DEFAULT,
-            ledger_item_type=data.LedgerItemType.EXPENSE,
+            account=models.Account.DEFAULT,
+            ledger_item_type=models.LedgerItemType.EXPENSE,
         ),
-        data.LedgerItem(
+        models.LedgerItem(
             tx_date=date(2023, 1, 5),
             tx_datetime=datetime(2023, 1, 5, 0, 0),
             amount=Decimal('3.95'),
             currency='EUR',
             description='Sconto Canone Mensile,Sconto Canone Mensile Dicembre 2022',
-            account=data.Account.DEFAULT,
-            ledger_item_type=data.LedgerItemType.INCOME,
+            account=models.Account.DEFAULT,
+            ledger_item_type=models.LedgerItemType.INCOME,
         ),
     ])

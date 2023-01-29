@@ -1,10 +1,10 @@
 import factory
-from src import data
+from src import models
 
 
 class LedgerItemFactory(factory.Factory):
     class Meta:
-        model = data.LedgerItem
+        model = models.LedgerItem
 
     tx_date = factory.Faker('date')
     tx_datetime = factory.Faker('date_time')
@@ -12,6 +12,6 @@ class LedgerItemFactory(factory.Factory):
                            right_digits=2)
     currency = 'EUR'
     description = factory.Faker('sentence')
-    account = factory.Faker('random_element', elements=list(data.Account))
+    account = factory.Faker('random_element', elements=list(models.Account))
     ledger_item_type = factory.Faker(
-        'random_element', elements=list(data.LedgerItemType))
+        'random_element', elements=list(models.LedgerItemType))
