@@ -5,8 +5,6 @@ from typing import Generator, Iterable, Optional
 
 from src import migrations, models
 
-# create a context manager to get the default database
-
 
 @contextmanager
 def db_context() -> Generator[sqlite3.Connection, None, None]:
