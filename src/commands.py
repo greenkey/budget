@@ -1,9 +1,10 @@
 import logging
+import os
 from pathlib import Path
 from typing import Optional
 
 import config
-from src import extract, operations
+from src import extract, migrations, operations
 
 logger = logging.getLogger(__name__)
 
@@ -35,3 +36,14 @@ class Commands:
                     break
             else:
                 logger.warning(f"No importer found for file {file}")
+
+    def setup_db(self):
+        """
+        Create the database and the tables
+        """
+        if not (db_path := os.environ.get("DB_PATH")):
+            raise Exception("DB_PATH environment variable not set")
+        # create the database folder if it doesn't exist
+        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+        with operations.db_context() as db:
+            migrations.migrate(db)

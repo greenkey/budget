@@ -5,6 +5,7 @@ def create_ledger_items_table(db: sqlite3.Connection) -> None:
     db.execute(
         """
         CREATE TABLE ledger_items (
+            tx_id INT PRIMARY KEY,
             tx_date DATE,
             tx_datetime DATETIME,
             amount TEXT,

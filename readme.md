@@ -2,6 +2,7 @@
 
 1. Create a .env file in the application root copying it from `example.env`
 1. Run `pip install -r dev-requirements.txt`
+1. Run `./run.py setup_db`
 
 ## Usage
 
