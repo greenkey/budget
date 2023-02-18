@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Optional
 
 import config
-from src import extract, migrations, operations, query
+from src import extract, migrations, operations, sqlite
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ class Commands:
                 else:
                     logger.info(f"Importing {len(ledger_items)} items from {file}")
                     operations.store_ledger_items(ledger_items)
-                    [result] = query.query("select count(1) as c from ledger_items")
+                    [result] = sqlite.query("select count(1) as c from ledger_items")
                     logger.info(f"Total items in the database: {result['c']}")
                     break
             else:

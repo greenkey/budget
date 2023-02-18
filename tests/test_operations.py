@@ -4,7 +4,7 @@ from decimal import Decimal
 
 import pytest
 
-from src import migrations, models, operations, query
+from src import migrations, models, operations, sqlite
 from tests.factories import LedgerItemFactory
 
 
@@ -15,7 +15,7 @@ def test_store_ledger_items(db: sqlite3.Connection):
     ]
     operations.store_ledger_items(ledger_items, db=db)
 
-    result = query.query("SELECT * FROM ledger_items", db=db)
+    result = sqlite.query("SELECT * FROM ledger_items", db=db)
     assert sorted(
         models.LedgerItem(
             tx_date=date.fromisoformat(item["tx_date"]),
