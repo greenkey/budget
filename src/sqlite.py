@@ -1,10 +1,9 @@
 import os
 import sqlite3
 from contextlib import contextmanager
-from typing import Any, Generator, Iterable, Optional
+from typing import Any, Generator
 
 from src import migrations, models
-from src.operations import db_context, uses_db
 
 
 @contextmanager

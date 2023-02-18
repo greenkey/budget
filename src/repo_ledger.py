@@ -3,7 +3,7 @@ from typing import Iterable
 from src import models, sqlite
 
 
-class LedgerItems:
+class LedgerItemRepo:
     def __init__(self, db_path: str):
         self.db_path = db_path
 

@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Optional
 
 import config
-from src import extract, migrations, operations, sqlite
+from src import extract, migrations, repo_ledger, sqlite
 
 logger = logging.getLogger(__name__)
 
@@ -32,21 +32,9 @@ class Commands:
                 except Exception:
                     pass
                 else:
-                    logger.info(f"Importing {len(ledger_items)} items from {file}")
-                    operations.store_ledger_items(ledger_items)
-                    [result] = sqlite.query("select count(1) as c from ledger_items")
-                    logger.info(f"Total items in the database: {result['c']}")
+                    repo = repo_ledger.LedgerItemRepo(config.DB_PATH)
+                    repo.insert(ledger_items)
                     break
             else:
-                logger.warning(f"No importer found for file {file}")
-
-    def setup_db(self):
-        """
-        Create the database and the tables
-        """
-        if not (db_path := os.environ.get("DB_PATH")):
-            raise Exception("DB_PATH environment variable not set")
-        # create the database folder if it doesn't exist
-        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-        with operations.db_context() as db:
-            migrations.migrate(db)
+                logger.critical(f"No importer found for file {file}")
+                exit(1)

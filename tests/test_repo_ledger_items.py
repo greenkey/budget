@@ -1,12 +1,12 @@
 from src import sqlite
-from src.repo_ledger import LedgerItems
+from src.repo_ledger import LedgerItemRepo
 from tests import factories
 
 
 def test_insert_ledger_item(tmp_path):
     ledger_item = factories.LedgerItemFactory()
     db_path = f"{tmp_path}/test.db"
-    repo = LedgerItems(db_path)
+    repo = LedgerItemRepo(db_path)
     repo.insert([ledger_item])
 
     with sqlite.db_context(db_path) as db:
@@ -24,7 +24,7 @@ def test_insert_ledger_item(tmp_path):
 def test_multiple_insert_ledger_item(tmp_path):
     ledger_items = [factories.LedgerItemFactory() for _ in range(3)]
     db_path = f"{tmp_path}/test.db"
-    repo = LedgerItems(db_path)
+    repo = LedgerItemRepo(db_path)
     repo.insert(ledger_items)
 
     with sqlite.db_context(db_path) as db:
