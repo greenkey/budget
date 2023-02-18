@@ -40,9 +40,23 @@ def store_ledger_items(ledger_items: Iterable[models.LedgerItem], db: sqlite3.Co
     db.executemany(
         """
         INSERT INTO ledger_items (
-            tx_date,     tx_datetime,    amount,         currency,   description,    account,    ledger_item_type
+            tx_id,
+            tx_date,
+            tx_datetime,
+            amount,
+            currency,
+            description,
+            account,
+            ledger_item_type
         ) VALUES (
-            :tx_date,    :tx_datetime,   :amount,        :currency,  :description,   :account,   :ledger_item_type
+            :tx_id,
+            :tx_date,
+            :tx_datetime,
+            :amount,
+            :currency,
+            :description,
+            :account,
+            :ledger_item_type
         )
     """,
         map(models.asdict, ledger_items),

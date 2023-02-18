@@ -15,15 +15,17 @@ class LedgerItemType(Enum):
     INCOME = "income"
 
 
-def _calculate_tx_id(obj) -> int:
-    return hash(
-        "|".join(
-            [
-                obj.account.value,
-                obj.tx_datetime.isoformat(),
-                str(obj.amount),
-                obj.description,
-            ]
+def _calculate_tx_id(obj) -> str:
+    return str(
+        hash(
+            "|".join(
+                [
+                    obj.account.value,
+                    obj.tx_datetime.isoformat(),
+                    f"{obj.amount:.2f}",
+                    obj.description,
+                ]
+            )
         )
     )
 
@@ -37,7 +39,7 @@ class LedgerItem:
     description: str
     account: Account  # enum containing all the managed accounts, it'll also be used during import to determine the account
     ledger_item_type: LedgerItemType  # enum containing TRANSFER, EXPENSE, INCOME
-    tx_id: int | None = None  # it's the hash of the transaction, it's used to avoid duplicates
+    tx_id: str | None = None  # it's the hash of the transaction, it's used to avoid duplicates
     # it cannot be deduced from the source, but it will be in the storage and we might want to use this in the code
     event_name: str | None = None
 
