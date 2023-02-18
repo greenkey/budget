@@ -22,19 +22,17 @@ def db_context() -> Generator[sqlite3.Connection, None, None]:
 def uses_db(func):
     def wrapper(*args, **kwargs):
         if kwargs.get("db"):
-            func(*args, **kwargs)
+            return func(*args, **kwargs)
         else:
             with db_context() as db:
                 kwargs["db"] = db
-                func(*args, **kwargs)
+                return func(*args, **kwargs)
 
     return wrapper
 
 
 @uses_db
-def store_ledger_items(
-    ledger_items: Iterable[models.LedgerItem], db: sqlite3.Connection
-) -> None:
+def store_ledger_items(ledger_items: Iterable[models.LedgerItem], db: sqlite3.Connection) -> None:
     """
     Store the ledger items in the database
     """
@@ -49,3 +47,4 @@ def store_ledger_items(
     """,
         map(models.asdict, ledger_items),
     )
+    db.commit()

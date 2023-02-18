@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Optional
 
 import config
-from src import extract, migrations, operations
+from src import extract, migrations, operations, query
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,10 @@ class Commands:
                 except Exception:
                     pass
                 else:
+                    logger.info(f"Importing {len(ledger_items)} items from {file}")
                     operations.store_ledger_items(ledger_items)
+                    [result] = query.query("select count(1) as c from ledger_items")
+                    logger.info(f"Total items in the database: {result['c']}")
                     break
             else:
                 logger.warning(f"No importer found for file {file}")

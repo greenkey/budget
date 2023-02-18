@@ -15,6 +15,19 @@ class LedgerItemType(Enum):
     INCOME = "income"
 
 
+def _calculate_tx_id(obj) -> int:
+    return hash(
+        "|".join(
+            [
+                obj.account.value,
+                obj.tx_datetime.isoformat(),
+                str(obj.amount),
+                obj.description,
+            ]
+        )
+    )
+
+
 @dataclasses.dataclass
 class LedgerItem:
     tx_date: date
@@ -24,22 +37,21 @@ class LedgerItem:
     description: str
     account: Account  # enum containing all the managed accounts, it'll also be used during import to determine the account
     ledger_item_type: LedgerItemType  # enum containing TRANSFER, EXPENSE, INCOME
+    tx_id: int | None = None  # it's the hash of the transaction, it's used to avoid duplicates
     # it cannot be deduced from the source, but it will be in the storage and we might want to use this in the code
-    event_name: Optional[str] = None
+    event_name: str | None = None
 
     # TODO: get the fx from the database
     # @property
     # def amount_EUR(self) -> Decimal:
 
-    # TODO
-    # @property
-    # def tx_id(self) -> str:
-    #     # iso timestamp, plus sequence
-    #     ...
-
     def __lt__(self, other: "LedgerItem") -> bool:
         # implement a check against hash to avoid duplicates
         return self.tx_datetime < other.tx_datetime
+
+    def __post_init__(self):
+        if self.tx_id is None:
+            self.tx_id = _calculate_tx_id(self)
 
 
 def asdict(item: Any) -> dict[str, Any]:
