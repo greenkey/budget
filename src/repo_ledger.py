@@ -1,3 +1,5 @@
+from typing import Iterable
+
 from src import models, sqlite
 
 
@@ -5,9 +7,9 @@ class LedgerItems:
     def __init__(self, db_path: str):
         self.db_path = db_path
 
-    def insert(self, ledger_item: models.LedgerItem):
+    def insert(self, ledger_items: Iterable[models.LedgerItem]):
         with sqlite.db_context(self.db_path) as db:
-            db.execute(
+            db.executemany(
                 """
                 INSERT INTO ledger_items (
                     tx_id,
@@ -29,6 +31,6 @@ class LedgerItems:
                     :ledger_item_type
                 )
                 """,
-                models.asdict(ledger_item),
+                [models.asdict(ledger_item) for ledger_item in ledger_items],
             )
             db.commit()
