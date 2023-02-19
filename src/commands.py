@@ -4,15 +4,9 @@ from pathlib import Path
 from typing import Optional
 
 import config
-from src import extract, migrations, repo_ledger, sqlite
+from src import application, extract, migrations, repo_ledger, sqlite
 
 logger = logging.getLogger(__name__)
-
-importers: list[type[extract.Importer]] = [
-    extract.FinecoImporter,
-    # add here new importers
-]
-
 
 class Commands:
     def import_files(self, folder: Optional[str] = None):
@@ -21,22 +15,5 @@ class Commands:
         """
         folder_path = Path(folder) if folder else config.DATA_FOLDER
         # get all the files in the data folder
-        for file in folder_path.iterdir():
-            if file == config.DB_PATH:
-                continue
-            # for each file, try all the importers until one works
-            for importer_class in importers:
-                importer = importer_class(file)
-                try:
-                    ledger_items = list(importer.get_ledger_items())
-                except Exception as exc:
-                    logger.debug(
-                        f"Error wile importing file {file} with importer {importer_class}: {exc}"
-                    )
-                else:
-                    repo = repo_ledger.LedgerItemRepo(config.DB_PATH)
-                    repo.insert(ledger_items)
-                    break
-            else:
-                logger.critical(f"No importer found for file {file}")
-                exit(1)
+        files = [file for file in folder_path.iterdir() if file.is_file() and file != config.DB_PATH]
+        application.import_files(files)

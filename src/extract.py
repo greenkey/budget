@@ -9,6 +9,14 @@ import openpyxl
 from src import models
 
 
+def get_importers() -> Generator[type["Importer"], None, None]:
+    """
+    Return a generator of all the importers
+    """
+    for importer_class in Importer.__subclasses__():
+        yield importer_class
+
+
 class Importer(abc.ABC):
     def __init__(self, file_path: Union[str, Path]):
         self.source_file = Path(file_path)
