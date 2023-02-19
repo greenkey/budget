@@ -2,6 +2,7 @@ import dataclasses
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
+import hashlib
 from typing import Any, Optional
 
 
@@ -16,18 +17,15 @@ class LedgerItemType(Enum):
 
 
 def _calculate_tx_id(obj) -> str:
-    return str(
-        hash(
-            "|".join(
+    s = "|".join(
                 [
                     obj.account.value,
-                    obj.tx_datetime.isoformat(),
+                    obj.tx_datetime.strftime("%Y-%m-%d %H:%M:%S"),
                     f"{obj.amount:.2f}",
                     obj.description,
                 ]
             )
-        )
-    )
+    return hashlib.sha1(s.encode("utf-8")).hexdigest()
 
 
 @dataclasses.dataclass

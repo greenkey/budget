@@ -48,9 +48,7 @@ class FinecoImporter(Importer):
                 amount = Decimal(line_dict["Uscite"])
                 ledger_item_type = models.LedgerItemType.EXPENSE
 
-            description = ",".join(
-                [line_dict["Descrizione"], line_dict["Descrizione_Completa"]]
-            )
+            description = ",".join([line_dict["Descrizione"], line_dict["Descrizione_Completa"]])
             account = models.Account.DEFAULT
 
             ledger_item = models.LedgerItem(
