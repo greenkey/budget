@@ -8,6 +8,7 @@ from src import application, extract, migrations, repo_ledger, sqlite
 
 logger = logging.getLogger(__name__)
 
+
 class Commands:
     def import_files(self, folder: Optional[str] = None):
         """
@@ -15,5 +16,7 @@ class Commands:
         """
         folder_path = Path(folder) if folder else config.DATA_FOLDER
         # get all the files in the data folder
-        files = [file for file in folder_path.iterdir() if file.is_file() and file != config.DB_PATH]
+        files = [
+            file for file in folder_path.iterdir() if file.is_file() and file != config.DB_PATH
+        ]
         application.import_files(files)

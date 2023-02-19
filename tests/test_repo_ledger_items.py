@@ -41,3 +41,21 @@ def test_multiple_insert_ledger_item(tmp_path):
             assert result[i]["description"] == ledger_item.description
             assert result[i]["account"] == ledger_item.account.value
             assert result[i]["ledger_item_type"] == ledger_item.ledger_item_type.value
+
+
+def test_insert_or_ignore_by_default(tmp_path):
+    ledger_item = factories.LedgerItemFactory()
+    db_path = f"{tmp_path}/test.db"
+    repo = LedgerItemRepo(db_path)
+    repo.insert([ledger_item, ledger_item])  # Insert twice the same item
+
+    with sqlite.db_context(db_path) as db:
+        [result] = sqlite.query("SELECT * FROM ledger_items", db=db)
+        assert result["tx_id"] == ledger_item.tx_id
+        assert result["tx_date"] == ledger_item.tx_date.isoformat()
+        assert result["tx_datetime"] == ledger_item.tx_datetime.strftime("%Y-%m-%d %H:%M:%S")
+        assert result["amount"] == str(ledger_item.amount)
+        assert result["currency"] == ledger_item.currency
+        assert result["description"] == ledger_item.description
+        assert result["account"] == ledger_item.account.value
+        assert result["ledger_item_type"] == ledger_item.ledger_item_type.value

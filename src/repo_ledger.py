@@ -11,7 +11,7 @@ class LedgerItemRepo:
         with sqlite.db_context(self.db_path) as db:
             db.executemany(
                 """
-                INSERT INTO ledger_items (
+                INSERT or ignore INTO ledger_items (
                     tx_id,
                     tx_date,
                     tx_datetime,
