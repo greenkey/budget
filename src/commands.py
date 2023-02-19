@@ -29,8 +29,10 @@ class Commands:
                 importer = importer_class(file)
                 try:
                     ledger_items = list(importer.get_ledger_items())
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug(
+                        f"Error wile importing file {file} with importer {importer_class}: {exc}"
+                    )
                 else:
                     repo = repo_ledger.LedgerItemRepo(config.DB_PATH)
                     repo.insert(ledger_items)
