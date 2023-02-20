@@ -1,13 +1,9 @@
 import dataclasses
+import hashlib
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
-import hashlib
 from typing import Any, Optional
-
-
-class Account(Enum):
-    DEFAULT = "default"
 
 
 class LedgerItemType(Enum):
@@ -18,13 +14,13 @@ class LedgerItemType(Enum):
 
 def _calculate_tx_id(obj) -> str:
     s = "|".join(
-                [
-                    obj.account.value,
-                    obj.tx_datetime.strftime("%Y-%m-%d %H:%M:%S"),
-                    f"{obj.amount:.2f}",
-                    obj.description,
-                ]
-            )
+        [
+            obj.account,
+            obj.tx_datetime.strftime("%Y-%m-%d %H:%M:%S"),
+            f"{obj.amount:.2f}",
+            obj.description,
+        ]
+    )
     return hashlib.sha1(s.encode("utf-8")).hexdigest()
 
 
@@ -35,11 +31,14 @@ class LedgerItem:
     amount: Decimal
     currency: str  # three char
     description: str
-    account: Account  # enum containing all the managed accounts, it'll also be used during import to determine the account
+    account: str
     ledger_item_type: LedgerItemType  # enum containing TRANSFER, EXPENSE, INCOME
     tx_id: str | None = None  # it's the hash of the transaction, it's used to avoid duplicates
     # it cannot be deduced from the source, but it will be in the storage and we might want to use this in the code
     event_name: str | None = None
+    counterparty: str | None = None  # expense counterparty
+    category: str | None = None  # expense category
+    labels: str | None = None  # comma separated list of labels
 
     # TODO: get the fx from the database
     # @property

@@ -22,7 +22,7 @@ def test_import_files_process_files(mock_import_file: MagicMock, get_importers: 
 @patch.object(extract, "get_importers")
 def test_import_files_runs_one_importer_for_each_file(get_importers: MagicMock):
     importer_class1 = MagicMock()
-    importer_class1().get_ledger_items.side_effect = [[], application.FormatFileError]
+    importer_class1().get_ledger_items.side_effect = [[], extract.FormatFileError]
     importer_class2 = MagicMock()
     importer_class2().get_ledger_items.side_effect = [[]]
     get_importers.return_value = [importer_class1, importer_class2]
@@ -36,7 +36,7 @@ def test_import_files_runs_one_importer_for_each_file(get_importers: MagicMock):
 @patch.object(extract, "get_importers")
 def test_import_files_raises_extractor_not_found_error(get_importers: MagicMock):
     importer_class = MagicMock()
-    importer_class().get_ledger_items.side_effect = application.FormatFileError
+    importer_class().get_ledger_items.side_effect = extract.FormatFileError
     get_importers.return_value = [importer_class]
     files = [Path("file1")]
 

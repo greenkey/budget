@@ -17,7 +17,7 @@ def test_insert_ledger_item(tmp_path):
         assert result["amount"] == str(ledger_item.amount)
         assert result["currency"] == ledger_item.currency
         assert result["description"] == ledger_item.description
-        assert result["account"] == ledger_item.account.value
+        assert result["account"] == ledger_item.account
         assert result["ledger_item_type"] == ledger_item.ledger_item_type.value
 
 
@@ -39,7 +39,7 @@ def test_multiple_insert_ledger_item(tmp_path):
             assert result[i]["amount"] == str(ledger_item.amount)
             assert result[i]["currency"] == ledger_item.currency
             assert result[i]["description"] == ledger_item.description
-            assert result[i]["account"] == ledger_item.account.value
+            assert result[i]["account"] == ledger_item.account
             assert result[i]["ledger_item_type"] == ledger_item.ledger_item_type.value
 
 
@@ -57,5 +57,5 @@ def test_insert_or_ignore_by_default(tmp_path):
         assert result["amount"] == str(ledger_item.amount)
         assert result["currency"] == ledger_item.currency
         assert result["description"] == ledger_item.description
-        assert result["account"] == ledger_item.account.value
+        assert result["account"] == ledger_item.account
         assert result["ledger_item_type"] == ledger_item.ledger_item_type.value

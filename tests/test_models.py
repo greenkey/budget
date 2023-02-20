@@ -1,5 +1,3 @@
-from src import models
-from src.models import _calculate_tx_id
 from tests import factories
 
 

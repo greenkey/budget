@@ -12,7 +12,5 @@ class LedgerItemFactory(factory.Factory):
     amount = factory.Faker("pydecimal", left_digits=2, right_digits=2)
     currency = "EUR"
     description = factory.Faker("sentence")
-    account = factory.Faker("random_element", elements=list(models.Account))
-    ledger_item_type = factory.Faker(
-        "random_element", elements=list(models.LedgerItemType)
-    )
+    account = "Bank"
+    ledger_item_type = factory.Faker("random_element", elements=list(models.LedgerItemType))

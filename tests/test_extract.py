@@ -41,8 +41,8 @@ def test_fineco_importer():
                 tx_datetime=datetime(2023, 1, 29, 0, 0),
                 amount=Decimal("-3.00"),
                 currency="EUR",
-                description="MULTIFUNZIONE CONTACTLESS CHIP 4030 **** **** 7737,CLESS TICKET ATM MILANO",
-                account=models.Account.DEFAULT,
+                description="CLESS TICKET ATM MILANO",
+                account="Fineco VISA",
                 ledger_item_type=models.LedgerItemType.EXPENSE,
             ),
             models.LedgerItem(
@@ -50,8 +50,8 @@ def test_fineco_importer():
                 tx_datetime=datetime(2023, 1, 5, 0, 0),
                 amount=Decimal("3.95"),
                 currency="EUR",
-                description="Sconto Canone Mensile,Sconto Canone Mensile Dicembre 2022",
-                account=models.Account.DEFAULT,
+                description="Sconto Canone Mensile Dicembre 2022",
+                account="Fineco EUR",
                 ledger_item_type=models.LedgerItemType.INCOME,
             ),
         ]

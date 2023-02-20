@@ -1,4 +1,5 @@
 import abc
+from csv import DictReader
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -15,6 +16,10 @@ def get_importers() -> Generator[type["Importer"], None, None]:
     """
     for importer_class in Importer.__subclasses__():
         yield importer_class
+
+
+class FormatFileError(ValueError):
+    pass
 
 
 class Importer(abc.ABC):
@@ -34,7 +39,10 @@ class FinecoImporter(Importer):
         """
         Open the excel file and return a generator of tuples containing the data
         """
-        workbook = openpyxl.load_workbook(str(self.source_file))
+        try:
+            workbook = openpyxl.load_workbook(str(self.source_file))
+        except openpyxl.utils.exceptions.InvalidFileException:
+            raise FormatFileError(f"Unable to open file {self.source_file}")
         sheet = workbook.active
         for row in sheet.rows:
             yield tuple(cell.value for cell in row)
@@ -56,8 +64,11 @@ class FinecoImporter(Importer):
                 amount = Decimal(line_dict["Uscite"])
                 ledger_item_type = models.LedgerItemType.EXPENSE
 
-            description = ",".join([line_dict["Descrizione"], line_dict["Descrizione_Completa"]])
-            account = models.Account.DEFAULT
+            description = line_dict["Descrizione_Completa"]
+            if line_dict["Descrizione"].startswith("MULTIFUNZIONE CONTACTLESS"):
+                account = "Fineco VISA"
+            else:
+                account = "Fineco EUR"
 
             ledger_item = models.LedgerItem(
                 tx_date=tx_date,
@@ -69,3 +80,25 @@ class FinecoImporter(Importer):
                 ledger_item_type=ledger_item_type,
             )
             yield ledger_item
+
+
+class CsvImporter(Importer):
+    def get_ledger_items(self) -> Generator[models.LedgerItem, None, None]:
+        # fields: Category name,Labels,Counterparty,Extra,Amount EUR
+        with open(self.source_file, "r") as f:
+            reader = DictReader(f)
+            for row in reader:
+                tx_datetime = datetime.strptime(row["Date"], "%Y-%m-%d %H:%M:%S")
+                amount = Decimal(row["Amount"].replace(",", ""))
+                account = row["Wallet"]
+                ledger_item_type = models.LedgerItemType(row["Type"].lower())
+                ledger_item = models.LedgerItem(
+                    tx_date=tx_datetime.date(),
+                    tx_datetime=tx_datetime,
+                    amount=amount,
+                    currency=row["Currency"],
+                    description=row["Note"],
+                    account=account,
+                    ledger_item_type=ledger_item_type,
+                )
+                yield ledger_item

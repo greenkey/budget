@@ -7,10 +7,6 @@ from src import extract, repo_ledger
 logger = logging.getLogger(__name__)
 
 
-class FormatFileError(ValueError):
-    pass
-
-
 class ExtractorNotFoundError(ValueError):
     pass
 
@@ -23,8 +19,7 @@ def import_files(files: list[Path]):
         for importer_class in extract.get_importers():
             try:
                 ledger_items = _import_file(file, importer_class)
-            except FormatFileError as e:
-                logger.exception(f"Error while importing file {file}")
+            except extract.FormatFileError as e:
                 continue
             else:
                 break
