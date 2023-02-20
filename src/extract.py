@@ -78,13 +78,14 @@ class FinecoImporter(Importer):
                 description=description,
                 account=account,
                 ledger_item_type=ledger_item_type,
+                # TODO: add counterparty, category and labels
             )
             yield ledger_item
 
 
 class CsvImporter(Importer):
     def get_ledger_items(self) -> Generator[models.LedgerItem, None, None]:
-        # fields: Category name,Labels,Counterparty,Extra,Amount EUR
+        # fields to import: Extra,Amount EUR
         with open(self.source_file, "r") as f:
             reader = DictReader(f)
             for row in reader:
@@ -100,5 +101,8 @@ class CsvImporter(Importer):
                     description=row["Note"],
                     account=account,
                     ledger_item_type=ledger_item_type,
+                    counterparty=row["Counterparty"].strip() or None,
+                    category=row["Category name"].strip() or None,
+                    labels=row["Labels"].strip() or None,
                 )
                 yield ledger_item

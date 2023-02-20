@@ -12,7 +12,10 @@ def create_ledger_items_table(db: sqlite3.Connection) -> None:
             currency TEXT,
             description TEXT,
             account TEXT,
-            ledger_item_type TEXT
+            ledger_item_type TEXT,
+            counterparty TEXT,
+            category TEXT,
+            labels TEXT
         )"""
     )
 

@@ -19,7 +19,10 @@ class LedgerItemRepo:
                     currency,
                     description,
                     account,
-                    ledger_item_type
+                    ledger_item_type,
+                    counterparty,
+                    category,
+                    labels
                 ) VALUES (
                     :tx_id,
                     :tx_date,
@@ -28,7 +31,10 @@ class LedgerItemRepo:
                     :currency,
                     :description,
                     :account,
-                    :ledger_item_type
+                    :ledger_item_type,
+                    :counterparty,
+                    :category,
+                    :labels
                 )
                 """,
                 [models.asdict(ledger_item) for ledger_item in ledger_items],
