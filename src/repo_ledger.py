@@ -57,6 +57,16 @@ class LedgerItemRepo:
             db.commit()
         self.insert(ledger_items)
 
+    def set_category(self, ledger_item: models.LedgerItem, category: str):
+        with sqlite.db_context(self.db_path) as db:
+            db.execute(
+                """
+                UPDATE ledger_items SET category = :category WHERE tx_id = :tx_id
+                """,
+                {"tx_id": ledger_item.tx_id, "category": category},
+            )
+            db.commit()
+
 
 def _range(month: str, range: str | None = None) -> str:
     sheet_name = f"ledger {month}"
@@ -127,8 +137,12 @@ class GSheetLedgerItemRepo:
             # convert spreadsheet serial to datetime
             return datetime.datetime(1899, 12, 30) + datetime.timedelta(days=float(value))
         except ValueError:
-            # if not a number, return the string
+            pass  # try again
+
+        try:
             return datetime.datetime.fromisoformat(value)
+        except ValueError:
+            return value
 
     def get_month_data(self, month: str) -> Iterable[models.LedgerItem]:
         result = (
