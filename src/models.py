@@ -3,7 +3,7 @@ import hashlib
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 
 class LedgerItemType(Enum):
@@ -33,14 +33,13 @@ class LedgerItem:
     description: str
     account: str
     ledger_item_type: LedgerItemType  # enum containing TRANSFER, EXPENSE, INCOME
-    tx_id: str | None = None  # it's the hash of the transaction, it's used to avoid duplicates
-    # it cannot be deduced from the source, but it will be in the storage and we might want to use this in the code
+    tx_id: str | None = None
     event_name: str | None = None
-    counterparty: str | None = None  # expense counterparty
-    category: str | None = None  # expense category
+    counterparty: str | None = None
+    category: str | None = None
     labels: str | None = None  # comma separated list of labels
 
-    # TODO: get the fx from the database
+    # TODO: automatically calculate the amount in EUR
     # @property
     # def amount_EUR(self) -> Decimal:
 
@@ -51,6 +50,14 @@ class LedgerItem:
     def __post_init__(self):
         if self.tx_id is None:
             self.tx_id = _calculate_tx_id(self)
+        if isinstance(self.tx_date, str):
+            self.tx_date = date.fromisoformat(self.tx_date)
+        if isinstance(self.tx_datetime, str):
+            self.tx_datetime = datetime.fromisoformat(self.tx_datetime)
+        if not isinstance(self.amount, Decimal):
+            self.amount = Decimal(self.amount)
+        if not isinstance(self.ledger_item_type, LedgerItemType):
+            self.ledger_item_type = LedgerItemType(self.ledger_item_type)
 
     @classmethod
     def get_field_names(cls) -> list[str]:
@@ -81,11 +88,16 @@ def asdict(item: Any) -> dict[str, Any]:
     Convert a dataclass to a dict, converting Decimal and Enum to str and int respectively
     """
     result = {}
-    for k, v in dataclasses.asdict(item).items():
+    for k in item.get_field_names():
+        v = getattr(item, k)
         if isinstance(v, Decimal):
             result[k] = str(v)
         elif isinstance(v, Enum):
             result[k] = v.value
+        elif isinstance(v, datetime):
+            result[k] = v.strftime("%Y-%m-%d %H:%M:%S")
+        elif isinstance(v, date):
+            result[k] = v.isoformat()
         else:
             result[k] = v
     return result
