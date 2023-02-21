@@ -1,3 +1,4 @@
+import datetime
 from functools import cache
 from pathlib import Path
 from typing import Iterable
@@ -13,34 +14,13 @@ class LedgerItemRepo:
         self.db_path = db_path or config.DB_PATH
 
     def insert(self, ledger_items: Iterable[models.LedgerItem]):
+        field_names = models.LedgerItem.get_field_names()
+        fields = ", ".join(field_names)
+        placeholders = ", ".join(f":{field}" for field in field_names)
         with sqlite.db_context(self.db_path) as db:
             db.executemany(
-                """
-                INSERT or ignore INTO ledger_items (
-                    tx_id,
-                    tx_date,
-                    tx_datetime,
-                    amount,
-                    currency,
-                    description,
-                    account,
-                    ledger_item_type,
-                    counterparty,
-                    category,
-                    labels
-                ) VALUES (
-                    :tx_id,
-                    :tx_date,
-                    :tx_datetime,
-                    :amount,
-                    :currency,
-                    :description,
-                    :account,
-                    :ledger_item_type,
-                    :counterparty,
-                    :category,
-                    :labels
-                )
+                f"""
+                INSERT INTO ledger_items ({fields}) VALUES ({placeholders})
                 """,
                 [models.asdict(ledger_item) for ledger_item in ledger_items],
             )
@@ -65,6 +45,17 @@ class LedgerItemRepo:
                 row = dict(zip(columns, row))
                 # convert dictionaries to LedgerItem objects
                 yield models.LedgerItem(**row)
+
+    def replace_month_data(self, month: str, ledger_items: Iterable[models.LedgerItem]):
+        with sqlite.db_context(self.db_path) as db:
+            # delete all rows for the month
+            db.execute(
+                "DELETE FROM ledger_items WHERE strftime('%Y-%m', tx_date) = :month",
+                {"month": month},
+            )
+            # insert new rows
+            db.commit()
+        self.insert(ledger_items)
 
 
 def _range(month: str, range: str | None = None) -> str:
@@ -93,7 +84,7 @@ class GSheetLedgerItemRepo:
         ).execute()
 
     @cache
-    def _get_months(self) -> list[str]:
+    def get_months(self) -> list[str]:
         result = self.sheet.get(
             spreadsheetId=self.sheet_id, ranges=[], includeGridData=False
         ).execute()
@@ -102,10 +93,10 @@ class GSheetLedgerItemRepo:
         for sheet_title in sheet_titles:
             if sheet_title.startswith("ledger "):
                 months.append(sheet_title.split(" ")[1])
-        return months
+        return sorted(months)
 
     def _clear_month(self, month: str):
-        if month in self._get_months():
+        if month in self.get_months():
             self.sheet.values().clear(
                 spreadsheetId=self.sheet_id, range=_range(month, "1:9999"), body={}
             ).execute()
@@ -130,3 +121,27 @@ class GSheetLedgerItemRepo:
             insertDataOption="INSERT_ROWS",
             body={"values": values},
         ).execute()
+
+    def _parse_datetime(self, value: str) -> datetime:
+        try:
+            # convert spreadsheet serial to datetime
+            return datetime.datetime(1899, 12, 30) + datetime.timedelta(days=float(value))
+        except ValueError:
+            # if not a number, return the string
+            return datetime.datetime.fromisoformat(value)
+
+    def get_month_data(self, month: str) -> Iterable[models.LedgerItem]:
+        result = (
+            self.sheet.values()
+            .get(spreadsheetId=self.sheet_id, range=_range(month, "2:9999"))
+            .execute()
+        )
+        values = result.get("values", [])
+        if not values:
+            return
+        for row in values:
+            dict_data = dict(zip(self.header, row))
+            # convert dates to datetime
+            dict_data["tx_date"] = self._parse_datetime(dict_data["tx_date"]).date()
+            dict_data["tx_datetime"] = self._parse_datetime(dict_data["tx_datetime"])
+            yield models.LedgerItem(**dict_data)

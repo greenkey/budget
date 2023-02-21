@@ -1,9 +1,7 @@
 import sqlite3
 
-
-def create_ledger_items_table(db: sqlite3.Connection) -> None:
-    db.execute(
-        """
+migrations = {
+    1: """
         CREATE TABLE ledger_items (
             tx_id TEXT UNIQUE PRIMARY KEY,
             tx_date DATE,
@@ -16,12 +14,8 @@ def create_ledger_items_table(db: sqlite3.Connection) -> None:
             counterparty TEXT,
             category TEXT,
             labels TEXT
-        )"""
-    )
-
-
-migrations = {
-    1: create_ledger_items_table,
+        )""",
+    2: """alter table ledger_items add column event_name TEXT""",
 }
 
 
@@ -35,5 +29,5 @@ def migrate(db: sqlite3.Connection) -> None:
     latest_version = max(migrations.keys())
     # apply all the migrations
     for version in range(current_version, latest_version):
-        migrations[version + 1](db)
+        db.execute(migrations[version + 1])
         db.execute(f"PRAGMA user_version = {version + 1}")
