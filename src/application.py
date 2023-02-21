@@ -51,3 +51,20 @@ def push_to_gsheet(month: str | None = None, previous_months: int | None = None)
         month_data = local_repo.get_month_data(month)
         # replace the content of the sheet
         remote_repo.replace_month_data(month, month_data)
+
+def pull_from_gsheet(month: str | None = None, previous_months: int | None = None):
+    local_repo = repo_ledger.LedgerItemRepo()
+    remote_repo = repo_ledger.GSheetLedgerItemRepo(models.LedgerItem.get_field_names())
+
+    if month:
+        months = [month]
+    elif previous_months:
+        months = list(remote_repo.get_months())[-previous_months:]
+    else:
+        months = remote_repo.get_months()
+
+    for month in months:
+        # get month data
+        month_data = remote_repo.get_month_data(month)
+        # replace the content of the sheet
+        local_repo.replace_month_data(month, month_data)

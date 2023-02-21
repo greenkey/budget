@@ -1,10 +1,9 @@
 import logging
-import os
 from pathlib import Path
 from typing import Optional
 
 import config
-from src import application, extract, gsheet, migrations, repo_ledger, sqlite
+from src import application, gsheet, migrations, sqlite
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +20,10 @@ class Commands:
         ]
         application.import_files(files)
 
+    def migrate_local_db(self):
+        with sqlite.db_context(config.DB_PATH) as db:
+            migrations.migrate(db)
+
     def setup_gsheet(self):
         """
         Setup the google sheet
@@ -32,6 +35,15 @@ class Commands:
         Backup the database
         """
         application.push_to_gsheet(
+            month=month,
+            previous_months=previous_months,
+        )
+
+    def pull(self, month: str | None = None, previous_months: int | None = None):
+        """
+        Backup the database
+        """
+        application.pull_from_gsheet(
             month=month,
             previous_months=previous_months,
         )
