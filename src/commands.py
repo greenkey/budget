@@ -1,3 +1,4 @@
+import datetime
 import logging
 from pathlib import Path
 from typing import Optional
@@ -30,20 +31,41 @@ class Commands:
         """
         gsheet.main()
 
-    def push(self, month: str | None = None, previous_months: int | None = None):
+    def push(self, **kwargs):
         """
         Backup the database
         """
         application.push_to_gsheet(
-            month=month,
-            previous_months=previous_months,
+            months=calculate_months(**kwargs),
         )
 
-    def pull(self, month: str | None = None, previous_months: int | None = None):
+    def pull(self, **kwargs):
         """
         Backup the database
         """
         application.pull_from_gsheet(
-            month=month,
-            previous_months=previous_months,
+            months=calculate_months(**kwargs),
         )
+
+
+def calculate_months(**kwargs):
+    if month := kwargs.get("month"):
+        return [month]
+
+    months = set()
+
+    if backwards := kwargs.get("previous_months"):
+        day = datetime.date.today()
+        while len(months) < backwards:
+            months.add(day.strftime("%Y-%m"))
+            day = day.replace(day=1) - datetime.timedelta(days=1)
+
+    if month_start := kwargs.get("month_start"):
+        if not (month_end := kwargs.get("month_end")):
+            month_end = datetime.date.today().strftime("%Y-%m")
+        day = datetime.datetime.strptime(month_start, "%Y-%m")
+        while day.strftime("%Y-%m") <= month_end:
+            months.add(day.strftime("%Y-%m"))
+            day = day.replace(day=1) + datetime.timedelta(days=32)
+
+    return sorted(months)
