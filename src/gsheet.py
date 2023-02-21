@@ -17,11 +17,7 @@ SCOPES = [
 ]
 
 
-def main():
-    """
-    hows basic usage of the Sheets API.
-    Prints values from a sample spreadsheet.
-    """
+def get_creds():
     creds = None
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
@@ -38,6 +34,15 @@ def main():
         # Save the credentials for the next run
         with open("token.json", "w") as token:
             token.write(creds.to_json())
+    return creds
+
+
+def main():
+    """
+    hows basic usage of the Sheets API.
+    Prints values from a sample spreadsheet.
+    """
+    creds = get_creds()
 
     try:
         service = build("sheets", "v4", credentials=creds)

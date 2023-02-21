@@ -52,6 +52,29 @@ class LedgerItem:
         if self.tx_id is None:
             self.tx_id = _calculate_tx_id(self)
 
+    @classmethod
+    def get_field_names(cls) -> list[str]:
+        # returning a list to preserve the order
+        field_names = [
+            "tx_id",
+            "tx_date",
+            "tx_datetime",
+            "amount",
+            "currency",
+            "description",
+            "account",
+            "ledger_item_type",
+            "event_name",
+            "counterparty",
+            "category",
+            "labels",
+        ]
+        # add the missing ones
+        for f in dataclasses.fields(cls):
+            if f.name not in field_names:
+                field_names.append(f.name)
+        return field_names
+
 
 def asdict(item: Any) -> dict[str, Any]:
     """

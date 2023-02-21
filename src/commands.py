@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Optional
 
 import config
-from src import application, extract, migrations, repo_ledger, sqlite
+from src import application, extract, gsheet, migrations, repo_ledger, sqlite
 
 logger = logging.getLogger(__name__)
 
@@ -26,3 +26,12 @@ class Commands:
         Setup the google sheet
         """
         gsheet.main()
+
+    def push(self, month: str | None = None, previous_months: int | None = None):
+        """
+        Backup the database
+        """
+        application.push_to_gsheet(
+            month=month,
+            previous_months=previous_months,
+        )
