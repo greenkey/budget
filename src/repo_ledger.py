@@ -64,13 +64,17 @@ class LedgerItemRepo:
             db.commit()
         self.insert(ledger_items)
 
-    def set_category(self, ledger_item: models.LedgerItem, category: str):
+    def update(self, ledger_item: models.LedgerItem):
+        field_names = models.LedgerItem.get_field_names()
+        field_names.remove("tx_id")
+        set_string = ", ".join(f"{field} = :{field}" for field in field_names)
+
         with sqlite.db_context(self.db_path) as db:
             db.execute(
-                """
-                UPDATE ledger_items SET category = :category WHERE tx_id = :tx_id
+                f"""
+                UPDATE ledger_items SET {set_string} WHERE tx_id = :tx_id
                 """,
-                {"tx_id": ledger_item.tx_id, "category": category},
+                models.asdict(ledger_item),
             )
             db.commit()
 

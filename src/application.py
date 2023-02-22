@@ -15,6 +15,7 @@ def import_files(files: list[Path]):
     """
     Search for all the files contained in the data folder, for each try all the Importers until one works, then store the data in the database
     """
+    ledger_items = []
     for file in files:
         for importer_class in extract.get_importers():
             try:
@@ -26,8 +27,9 @@ def import_files(files: list[Path]):
         else:
             logger.error(f"Unable to import file {file}")
 
-        repo = repo_ledger.LedgerItemRepo(config.DB_PATH)
-        repo.insert(ledger_items, duplicate_strategy="skip")
+        if ledger_items:
+            repo = repo_ledger.LedgerItemRepo(config.DB_PATH)
+            repo.insert(ledger_items, duplicate_strategy="skip")
 
 
 def _import_file(file_path: Path, importer_class: type[extract.Importer]):
@@ -58,26 +60,36 @@ def pull_from_gsheet(months: list[str]):
         local_repo.replace_month_data(month, month_data)
 
 
-def guess_categories(months: list[str], min_confidence: float = 0.9):
-    logger.info(f"Guessing categories with min confidence {min_confidence}")
+def guess(field: str, months: list[str]):
+    logger.info(f"Guessing {field}")
     local_repo = repo_ledger.LedgerItemRepo()
 
-    classifier = classifiers.get_classifier("category")
+    classifier = classifiers.get_classifier(field)
 
     data = sum((list(local_repo.get_month_data(month)) for month in months), start=[])
-    for item in data:
-        if item.category:
-            continue
-        prediction = classifier.predict(item.description)
-        if prediction:
-            new_category = input(
-                f"----------\n{item.description}\n [{prediction}] [q=quit, s=skip] : "
-            )
-            if new_category == "q":
-                return
-            elif new_category == "s":
-                continue
-            elif not new_category.strip():
-                new_category = prediction
 
-            local_repo.set_category(item, new_category)
+    data_with_prediction = [
+        (item, classifier.predict_with_meta(item.description))
+        for item in data
+        if not getattr(item, field)
+    ]
+
+    # order by confidence
+    data_with_prediction.sort(key=lambda x: x[1][1], reverse=True)
+
+    for item, (prediction, confidence, _) in data_with_prediction:
+        if prediction:
+            new_value = input(
+                f"----------\n{item.description}\n [{prediction}, {confidence*100:.0f}] [q=quit, s=skip] : "
+            )
+            if new_value == "q":
+                return
+            elif new_value == "s":
+                continue
+            elif not new_value.strip():
+                new_value = prediction
+
+            if new_value:
+                setattr(item, field, new_value)
+
+            local_repo.update(item)

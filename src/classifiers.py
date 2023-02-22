@@ -12,18 +12,22 @@ class Classifier:
     def __init__(self, model: LogisticRegression, vectorizer: CountVectorizer):
         self.model = model
         self.vectorizer = vectorizer
-        self.min_prob = 0.66
-        self.min_certainty = 0.33
+        self.min_confidence = 0.66
+        self.min_distance = 0.33
 
-    def predict(self, text):
+    def predict_with_meta(self, text):
         probability = self.model.predict_proba(self.vectorizer.transform([text]))[0]
         probs = np.argsort(probability)
         highest = probs[-1]
         second = probs[-2]
         prediction = self.model.classes_[highest]
-        prob = probability[highest]
-        certainty = probability[highest] - probability[second]
-        if prob >= self.min_prob and certainty >= self.min_certainty:
+        confidence = probability[highest]
+        distance = probability[highest] - probability[second]
+        return prediction, confidence, distance
+
+    def predict(self, text):
+        prediction, confidence, distance = self.predict_with_meta(text)
+        if confidence >= self.min_confidence and distance >= self.min_distance:
             return prediction
 
 

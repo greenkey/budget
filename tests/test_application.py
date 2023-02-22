@@ -34,11 +34,11 @@ def test_import_files_runs_one_importer_for_each_file(get_importers: MagicMock):
 
 
 @patch.object(extract, "get_importers")
-def test_import_files_raises_extractor_not_found_error(get_importers: MagicMock):
+def test_import_files_raises_extractor_not_found_error(get_importers: MagicMock, caplog):
     importer_class = MagicMock()
     importer_class().get_ledger_items.side_effect = extract.FormatFileError
     get_importers.return_value = [importer_class]
     files = [Path("file1")]
 
-    with pytest.raises(application.ExtractorNotFoundError):
-        application.import_files(files)
+    application.import_files(files)
+    assert "Unable to import file" in caplog.text

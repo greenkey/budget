@@ -47,13 +47,13 @@ class Commands:
             months=calculate_months(**kwargs),
         )
 
-    def guess_categories(self, min_confidence: float = 0.9, **kwargs):
+    def guess(self, field: str = "category", **kwargs):
         """
         Backup the database
         """
-        application.guess_categories(
+        application.guess(
+            field=field,
             months=calculate_months(**kwargs),
-            min_confidence=min_confidence,
         )
 
 
