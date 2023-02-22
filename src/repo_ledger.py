@@ -56,7 +56,9 @@ class LedgerItemRepo:
             for row in db.execute(query):
                 yield row[0]
 
-    def get_month_data(self, month: str) -> Iterable[models.LedgerItem]:
+    def get_month_data(
+        self, month: str, only_to_sync: bool = False
+    ) -> Iterable[models.LedgerItem]:
         query = "SELECT * FROM ledger_items WHERE strftime('%Y-%m', tx_date) = :month"
         with sqlite.db_context(self.db_path) as db:
             # create cursor for query
@@ -68,7 +70,19 @@ class LedgerItemRepo:
                 # create dict
                 row = dict(zip(columns, row))
                 # convert dictionaries to LedgerItem objects
+                if only_to_sync and not row["to_sync"]:
+                    continue
                 yield models.LedgerItem(**row)
+
+    def get_updated_data_by_month(self) -> Iterable[tuple[str, Iterable[models.LedgerItem]]]:
+        with sqlite.db_context(self.db_path) as db:
+            # get all the months that have to_sync set to True
+            query = (
+                "SELECT DISTINCT strftime('%Y-%m', tx_date) FROM ledger_items WHERE to_sync = 1"
+            )
+            for row in db.execute(query):
+                month = row[0]
+                yield month, self.get_month_data(month, only_to_sync=True)
 
     def replace_month_data(self, month: str, ledger_items: Iterable[models.LedgerItem]):
         with sqlite.db_context(self.db_path) as db:

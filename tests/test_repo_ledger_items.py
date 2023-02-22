@@ -74,3 +74,22 @@ def test_update(tmp_path):
                 assert item["to_sync"] == True
             else:
                 assert item["to_sync"] == False
+
+
+def test_get_updated_data_by_month(tmp_path):
+    ledger_items = [factories.LedgerItemFactory() for _ in range(3)]
+    db_path = f"{tmp_path}/test.db"
+    repo = LedgerItemRepo(db_path)
+    repo.insert(ledger_items)
+
+    item_to_update = ledger_items[0]
+    item_to_update.counterparty = "new counterparty"
+    item_to_update.category = "new category"
+    item_to_update.labels = "new labels"
+    repo.update(item_to_update)
+
+    result = list(repo.get_updated_data_by_month())
+    assert len(result) == 1
+    month, [record] = result[0]
+    assert month == item_to_update.tx_date.strftime("%Y-%m")
+    assert record.tx_id == item_to_update.tx_id
