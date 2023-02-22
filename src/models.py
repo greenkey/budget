@@ -48,8 +48,6 @@ class LedgerItem:
         return self.tx_datetime < other.tx_datetime
 
     def __post_init__(self):
-        if self.tx_id is None:
-            self.tx_id = _calculate_tx_id(self)
         if isinstance(self.tx_date, str):
             self.tx_date = date.fromisoformat(self.tx_date)
         if isinstance(self.tx_datetime, str):
@@ -58,6 +56,8 @@ class LedgerItem:
             self.amount = Decimal(self.amount)
         if not isinstance(self.ledger_item_type, LedgerItemType):
             self.ledger_item_type = LedgerItemType(self.ledger_item_type)
+        if self.tx_id is None:
+            self.tx_id = _calculate_tx_id(self)
 
     @classmethod
     def get_field_names(cls) -> list[str]:

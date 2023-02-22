@@ -24,10 +24,10 @@ def import_files(files: list[Path]):
             else:
                 break
         else:
-            raise ExtractorNotFoundError(f"Unable to import file {file}")
+            logger.error(f"Unable to import file {file}")
 
         repo = repo_ledger.LedgerItemRepo(config.DB_PATH)
-        repo.insert(ledger_items)
+        repo.insert(ledger_items, duplicate_strategy="skip")
 
 
 def _import_file(file_path: Path, importer_class: type[extract.Importer]):

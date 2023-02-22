@@ -13,14 +13,21 @@ class LedgerItemRepo:
     def __init__(self, db_path: str | Path | None = None):
         self.db_path = db_path or config.DB_PATH
 
-    def insert(self, ledger_items: Iterable[models.LedgerItem]):
+    def insert(self, ledger_items: Iterable[models.LedgerItem], duplicate_strategy: str = "raise"):
         field_names = models.LedgerItem.get_field_names()
         fields = ", ".join(field_names)
         placeholders = ", ".join(f":{field}" for field in field_names)
+
+        duplicate_strategy_str = {
+            "raise": "OR FAIL",
+            "replace": "OR REPLACE",
+            "skip": "OR IGNORE",
+        }[duplicate_strategy]
+
         with sqlite.db_context(self.db_path) as db:
             db.executemany(
                 f"""
-                INSERT INTO ledger_items ({fields}) VALUES ({placeholders})
+                INSERT {duplicate_strategy_str} INTO ledger_items ({fields}) VALUES ({placeholders})
                 """,
                 [models.asdict(ledger_item) for ledger_item in ledger_items],
             )
@@ -122,7 +129,8 @@ class GSheetLedgerItemRepo:
     def replace_month_data(self, month: str, ledger_items: Iterable[models.LedgerItem]):
         self._clear_month(month)
 
-        values = [[getattr(item, f, None) for f in self.header] for item in ledger_items]
+        dict_items = [models.asdict(item) for item in ledger_items]
+        values = [[item.get(f, None) for f in self.header] for item in dict_items]
 
         self.sheet.values().append(
             spreadsheetId=self.sheet_id,

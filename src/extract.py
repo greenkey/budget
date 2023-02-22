@@ -88,6 +88,25 @@ class CsvImporter(Importer):
         # fields to import: Extra,Amount EUR
         with open(self.source_file, "r") as f:
             reader = DictReader(f)
+
+            # if the columns are not the expected ones, raise an error
+            try:
+                file_columns = set(reader.fieldnames)
+            except UnicodeDecodeError:
+                raise FormatFileError(f"Unable to open file {self.source_file}")
+            if not {
+                "Date",
+                "Amount",
+                "Currency",
+                "Note",
+                "Wallet",
+                "Type",
+                "Counterparty",
+                "Category name",
+                "Labels",
+            }.issubset(file_columns):
+                raise FormatFileError(f"Unable to open file {self.source_file}")
+
             for row in reader:
                 tx_datetime = datetime.strptime(row["Date"], "%Y-%m-%d %H:%M:%S")
                 amount = Decimal(row["Amount"].replace(",", ""))
