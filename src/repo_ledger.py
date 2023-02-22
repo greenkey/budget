@@ -1,4 +1,5 @@
 import datetime
+import enum
 from functools import cache
 from pathlib import Path
 from typing import Iterable
@@ -9,20 +10,36 @@ import config
 from src import gsheet, models, sqlite
 
 
+class DuplicateStrategy(enum.Enum):
+    RAISE = "raise"
+    REPLACE = "replace"
+    SKIP = "skip"
+
+
 class LedgerItemRepo:
     def __init__(self, db_path: str | Path | None = None):
         self.db_path = db_path or config.DB_PATH
 
-    def insert(self, ledger_items: Iterable[models.LedgerItem], duplicate_strategy: str = "raise"):
+    def insert(
+        self,
+        ledger_items: Iterable[models.LedgerItem],
+        duplicate_strategy: DuplicateStrategy = DuplicateStrategy.RAISE,
+    ):
         field_names = models.LedgerItem.get_field_names()
         fields = ", ".join(field_names)
         placeholders = ", ".join(f":{field}" for field in field_names)
 
         duplicate_strategy_str = {
-            "raise": "OR FAIL",
-            "replace": "OR REPLACE",
-            "skip": "OR IGNORE",
+            DuplicateStrategy.RAISE: "OR FAIL",
+            DuplicateStrategy.REPLACE: "OR REPLACE",
+            DuplicateStrategy.SKIP: "OR IGNORE",
         }[duplicate_strategy]
+
+        # if we are skipping duplicates, it means we are in import phase, we want to sync them
+        if duplicate_strategy == DuplicateStrategy.SKIP:
+            ledger_items = list(ledger_items)
+            for ledger_item in ledger_items:
+                ledger_item.to_sync = True
 
         with sqlite.db_context(self.db_path) as db:
             db.executemany(
@@ -62,12 +79,15 @@ class LedgerItemRepo:
             )
             # insert new rows
             db.commit()
-        self.insert(ledger_items)
+        self.insert(ledger_items, duplicate_strategy=DuplicateStrategy.REPLACE)
 
     def update(self, ledger_item: models.LedgerItem):
         field_names = models.LedgerItem.get_field_names()
         field_names.remove("tx_id")
         set_string = ", ".join(f"{field} = :{field}" for field in field_names)
+
+        # ensure to_sync is set to True
+        ledger_item.to_sync = True
 
         with sqlite.db_context(self.db_path) as db:
             db.execute(

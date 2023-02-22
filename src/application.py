@@ -29,7 +29,7 @@ def import_files(files: list[Path]):
 
         if ledger_items:
             repo = repo_ledger.LedgerItemRepo(config.DB_PATH)
-            repo.insert(ledger_items, duplicate_strategy="skip")
+            repo.insert(ledger_items, duplicate_strategy=repo_ledger.DuplicateStrategy.SKIP)
 
 
 def _import_file(file_path: Path, importer_class: type[extract.Importer]):

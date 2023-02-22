@@ -38,6 +38,7 @@ class LedgerItem:
     counterparty: str | None = None
     category: str | None = None
     labels: str | None = None  # comma separated list of labels
+    to_sync: bool = False
 
     # TODO: automatically calculate the amount in EUR
     # @property

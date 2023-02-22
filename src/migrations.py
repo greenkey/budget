@@ -16,6 +16,7 @@ migrations = {
             labels TEXT
         )""",
     2: """alter table ledger_items add column event_name TEXT""",
+    3: """alter table ledger_items add column to_sync INTEGER""",
 }
 
 
