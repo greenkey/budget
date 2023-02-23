@@ -14,6 +14,7 @@ class Commands:
         """
         Search for all the files contained in the data folder, for each try all the Importers until one works, then store the data in the database
         """
+        logger.info("Importing files")
         folder_path = Path(folder) if folder else config.DATA_FOLDER
         # get all the files in the data folder
         files = [
@@ -33,16 +34,18 @@ class Commands:
 
     def push(self, **kwargs):
         """
-        Backup the database
+        Pushes data to Google Sheet
         """
+        logger.info("Pushing data to google sheet")
         application.push_to_gsheet(
             months=calculate_months(**kwargs),
         )
 
     def pull(self, **kwargs):
         """
-        Backup the database
+        Pulls data from Google Sheet
         """
+        logger.info("Pulling data from google sheet")
         application.pull_from_gsheet(
             months=calculate_months(**kwargs),
         )
@@ -51,10 +54,19 @@ class Commands:
         """
         Backup the database
         """
+        logger.info(f"Guessing field {field}")
         application.guess(
             field=field,
             months=calculate_months(**kwargs),
         )
+
+    def chain(self, *commands: list[str]):
+        """
+        Run a chain of commands
+        """
+        for command in commands:
+            fun = getattr(self, command)
+            fun()
 
 
 def calculate_months(**kwargs):
