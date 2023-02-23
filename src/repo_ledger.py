@@ -178,6 +178,14 @@ class GSheetLedgerItemRepo:
             body={"values": values},
         ).execute()
 
+    def update_month_data(self, month: str, ledger_items: Iterable[models.LedgerItem]):
+        existing_data = {item.tx_id: item for item in self.get_month_data(month)}
+
+        for item in ledger_items:
+            existing_data[item.tx_id] = item
+
+        self.replace_month_data(month, existing_data.values())
+
     def _parse_datetime(self, value: str) -> datetime:
         try:
             # convert spreadsheet serial to datetime

@@ -37,7 +37,7 @@ def _import_file(file_path: Path, importer_class: type[extract.Importer]):
     return list(importer.get_ledger_items())
 
 
-def push_to_gsheet(months: list[str]):
+def push_to_gsheet(months: list[str] | None = None):
     local_repo = repo_ledger.LedgerItemRepo()
     remote_repo = repo_ledger.GSheetLedgerItemRepo(models.LedgerItem.get_field_names())
 
@@ -47,6 +47,11 @@ def push_to_gsheet(months: list[str]):
         month_data = local_repo.get_month_data(month)
         # replace the content of the sheet
         remote_repo.replace_month_data(month, month_data)
+
+    if not months:
+        logger.info("Pushing all changed data")
+        for month, data in local_repo.get_updated_data_by_month():
+            remote_repo.update_month_data(month, data)
 
 
 def pull_from_gsheet(months: list[str]):
