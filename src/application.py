@@ -106,3 +106,9 @@ def guess(field: str, months: list[str]):
                 setattr(item, field, new_value)
 
             local_repo.update(item)
+
+
+def train(field: str):
+    classifier = classifiers.Classifier(field)
+    classifier.train(db_path=config.DB_PATH)
+    classifier.save()

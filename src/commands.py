@@ -68,6 +68,13 @@ class Commands:
             fun = getattr(self, command)
             fun()
 
+    def train(self, field: str = "category"):
+        """
+        Train the classifier
+        """
+        logger.info(f"Training classifier for field {field}")
+        application.train(field=field)
+
 
 def calculate_months(**kwargs):
     if month := kwargs.get("month"):
