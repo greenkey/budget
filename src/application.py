@@ -1,3 +1,4 @@
+import datetime
 import logging
 from pathlib import Path
 
@@ -54,9 +55,16 @@ def push_to_gsheet(months: list[str] | None = None):
             remote_repo.update_month_data(month, data)
 
 
-def pull_from_gsheet(months: list[str]):
+def pull_from_gsheet(months: list[str] | None = None):
     local_repo = repo_ledger.LedgerItemRepo()
     remote_repo = repo_ledger.GSheetLedgerItemRepo(models.LedgerItem.get_field_names())
+
+    if not months:
+        # get last three months
+        day = datetime.date.today()
+        while len(months) < 3:
+            months.append(day.strftime("%Y-%m"))
+            day = day.replace(day=1) - datetime.timedelta(days=1)
 
     for month in months:
         # get month data
