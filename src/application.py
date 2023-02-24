@@ -52,6 +52,7 @@ def push_to_gsheet(months: list[str] | None = None):
     if not months:
         logger.info("Pushing all changed data")
         for month, data in local_repo.get_updated_data_by_month():
+            logger.info(f"Pushing month {month}")
             remote_repo.update_month_data(month, data)
 
 
@@ -92,9 +93,17 @@ def guess(field: str, months: list[str]):
 
     for item, (prediction, confidence, _) in data_with_prediction:
         if prediction:
-            new_value = input(
-                f"----------\n{item.description}\n [{prediction}, {confidence*100:.0f}] [q=quit, s=skip] : "
+            print(
+                "\n".join(
+                    [
+                        "----------",
+                        f"Description: {item.description}",
+                        f"Date: {item.tx_datetime}",
+                        f"Amount: {item.amount}",
+                    ]
+                )
             )
+            new_value = input(f"[{prediction}, {confidence*100:.0f}] [q=quit, s=skip] : ")
             if new_value == "q":
                 return
             elif new_value == "s":
