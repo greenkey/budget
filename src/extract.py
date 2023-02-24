@@ -14,8 +14,13 @@ def get_importers() -> Generator[type["Importer"], None, None]:
     """
     Return a generator of all the importers
     """
-    for importer_class in Importer.__subclasses__():
-        yield importer_class
+    yield from get_all_subclasses(Importer)
+
+
+def get_all_subclasses(cls) -> Generator[type, None, None]:
+    for subclass in cls.__subclasses__():
+        yield subclass
+        yield from get_all_subclasses(subclass)
 
 
 class FormatFileError(ValueError):
@@ -84,8 +89,22 @@ class FinecoImporter(Importer):
 
 
 class CsvImporter(Importer):
-    def get_ledger_items(self) -> Generator[models.LedgerItem, None, None]:
-        # fields to import: Extra,Amount EUR
+    columns = [
+        "Date",
+        "Amount",
+        "Currency",
+        "Note",
+        "Wallet",
+        "Type",
+        "Counterparty",
+        "Category name",
+        "Labels",
+    ]
+
+    def get_records_from_file(self) -> Generator[tuple, None, None]:
+        """
+        Open the csv file and return a generator of tuples containing the data
+        """
         with open(self.source_file, "r") as f:
             reader = DictReader(f)
 
@@ -94,34 +113,75 @@ class CsvImporter(Importer):
                 file_columns = set(reader.fieldnames)
             except UnicodeDecodeError:
                 raise FormatFileError(f"Unable to open file {self.source_file}")
-            if not {
-                "Date",
-                "Amount",
-                "Currency",
-                "Note",
-                "Wallet",
-                "Type",
-                "Counterparty",
-                "Category name",
-                "Labels",
-            }.issubset(file_columns):
+            if not set(self.columns).issubset(file_columns):
                 raise FormatFileError(f"Unable to open file {self.source_file}")
 
             for row in reader:
-                tx_datetime = datetime.strptime(row["Date"], "%Y-%m-%d %H:%M:%S")
-                amount = Decimal(row["Amount"].replace(",", ""))
-                account = row["Wallet"]
-                ledger_item_type = models.LedgerItemType(row["Type"].lower())
-                ledger_item = models.LedgerItem(
-                    tx_date=tx_datetime.date(),
-                    tx_datetime=tx_datetime,
-                    amount=amount,
-                    currency=row["Currency"],
-                    description=row["Note"],
-                    account=account,
-                    ledger_item_type=ledger_item_type,
-                    counterparty=row["Counterparty"].strip() or None,
-                    category=row["Category name"].strip() or None,
-                    labels=row["Labels"].strip() or None,
-                )
-                yield ledger_item
+                yield row
+
+    def get_ledger_items(self) -> Generator[models.LedgerItem, None, None]:
+        # fields to import: Extra,Amount EUR
+        for row in self.get_records_from_file():
+            tx_datetime = datetime.strptime(row["Date"], "%Y-%m-%d %H:%M:%S")
+            amount = Decimal(row["Amount"].replace(",", ""))
+            account = row["Wallet"]
+            ledger_item_type = models.LedgerItemType(row["Type"].lower())
+            ledger_item = models.LedgerItem(
+                tx_date=tx_datetime.date(),
+                tx_datetime=tx_datetime,
+                amount=amount,
+                currency=row["Currency"],
+                description=row["Note"],
+                account=account,
+                ledger_item_type=ledger_item_type,
+                counterparty=row["Counterparty"].strip() or None,
+                category=row["Category name"].strip() or None,
+                labels=row["Labels"].strip() or None,
+            )
+            yield ledger_item
+
+
+class SatispayImporter(CsvImporter):
+    columns = "id,name,state,kind,date,amount,currency,extra info".split(",")
+    italian_months = {
+        "gen": "jan",
+        "feb": "feb",
+        "mar": "mar",
+        "apr": "apr",
+        "mag": "may",
+        "giu": "jun",
+        "lug": "jul",
+        "ago": "aug",
+        "set": "sep",
+        "ott": "oct",
+        "nov": "nov",
+        "dic": "dec",
+    }
+
+    def _parse_italian_date(self, datetime_str: str) -> datetime:
+        # parse Italian date format for '23 feb 2023, 01:45:30'
+        date_str, time_str = datetime_str.split(", ")
+        day, month, year = date_str.split(" ")
+        month = self.italian_months[month]
+        return datetime.strptime(f"{day} {month} {year}, {time_str}", "%d %b %Y, %H:%M:%S")
+
+    def get_ledger_items(self) -> Generator[models.LedgerItem, None, None]:
+        # fields to import: Extra,Amount EUR
+        for row in self.get_records_from_file():
+            tx_datetime = self._parse_italian_date(row["date"])
+            amount = Decimal(row["amount"])
+            ledger_item_type = (
+                models.LedgerItemType.EXPENSE if amount < 0 else models.LedgerItemType.INCOME
+            )
+            ledger_item = models.LedgerItem(
+                tx_id=row["id"],
+                tx_date=tx_datetime.date(),
+                tx_datetime=tx_datetime,
+                amount=amount,
+                currency=row["currency"],
+                description=row["name"],
+                account="Satispay",
+                ledger_item_type=ledger_item_type,
+                counterparty=row["name"] if row["kind"] != "Bank" else None,
+            )
+            yield ledger_item

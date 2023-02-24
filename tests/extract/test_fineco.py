@@ -6,7 +6,7 @@ from src import extract, models
 
 
 def test_fineco_excel_importer():
-    file_path = Path(__file__).parent / "fixtures" / "example.xlsx"
+    file_path = Path(__file__).parent.parent / "fixtures" / "example.xlsx"
     excel_importer = extract.FinecoImporter(file_path)
     records = list(excel_importer.get_records_from_file())
     assert records == [

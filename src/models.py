@@ -57,7 +57,7 @@ class LedgerItem:
             self.amount = Decimal(self.amount)
         if not isinstance(self.ledger_item_type, LedgerItemType):
             self.ledger_item_type = LedgerItemType(self.ledger_item_type)
-        if self.tx_id is None:
+        if not self.tx_id:
             self.tx_id = _calculate_tx_id(self)
 
     @classmethod
