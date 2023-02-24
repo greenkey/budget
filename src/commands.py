@@ -76,6 +76,16 @@ class Commands:
         logger.info(f"Training classifier for field {field}")
         application.train(field=field)
 
+    def review(self, month: str):
+        """
+        Review the transactions for a given month
+        """
+        logger.info(f"Reviewing transactions for month {month}")
+        self.pull(month=month)
+        self.guess(month=month, field="category")
+        self.guess(month=month, field="labels")
+        self.push(month=month)
+
 
 def calculate_months(**kwargs):
     if month := kwargs.get("month"):
