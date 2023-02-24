@@ -3,8 +3,8 @@ import logging
 from pathlib import Path
 
 import config
-from src import classifiers, extract, models, repo_ledger
-from src.ledger_repos import sqlite
+from src import classifiers, extract, models
+from src.ledger_repos import gsheet, sqlite
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +31,8 @@ def import_files(db: sqlite.Connection, files: list[Path]):
             logger.error(f"Unable to import file {file}")
 
         if ledger_items:
-            repo = repo_ledger.LedgerItemRepo(db)
-            repo.insert(ledger_items, duplicate_strategy=repo_ledger.DuplicateStrategy.SKIP)
+            repo = sqlite.LedgerItemRepo(db)
+            repo.insert(ledger_items, duplicate_strategy=sqlite.DuplicateStrategy.SKIP)
 
 
 def _import_file(file_path: Path, importer_class: type[extract.Importer]):
@@ -42,8 +42,8 @@ def _import_file(file_path: Path, importer_class: type[extract.Importer]):
 
 @sqlite.db
 def push_to_gsheet(db: sqlite.Connection, months: list[str] | None = None):
-    local_repo = repo_ledger.LedgerItemRepo(db)
-    remote_repo = repo_ledger.GSheetLedgerItemRepo(models.LedgerItem.get_field_names())
+    local_repo = sqlite.LedgerItemRepo(db)
+    remote_repo = gsheet.LedgerItemRepo(models.LedgerItem.get_field_names())
 
     for month in months:
         logger.info(f"Pushing month {month}")
@@ -62,8 +62,8 @@ def push_to_gsheet(db: sqlite.Connection, months: list[str] | None = None):
 
 @sqlite.db
 def pull_from_gsheet(db: sqlite.Connection, months: list[str] | None = None):
-    local_repo = repo_ledger.LedgerItemRepo(db)
-    remote_repo = repo_ledger.GSheetLedgerItemRepo(models.LedgerItem.get_field_names())
+    local_repo = sqlite.LedgerItemRepo(db)
+    remote_repo = gsheet.LedgerItemRepo(models.LedgerItem.get_field_names())
 
     if not months:
         # get last three months
@@ -82,7 +82,7 @@ def pull_from_gsheet(db: sqlite.Connection, months: list[str] | None = None):
 @sqlite.db
 def guess(db: sqlite.Connection, field: str, months: list[str]):
     logger.info(f"Guessing {field}")
-    local_repo = repo_ledger.LedgerItemRepo(db)
+    local_repo = sqlite.LedgerItemRepo(db)
 
     classifier = classifiers.get_classifier(field)
 
