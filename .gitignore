@@ -1,20 +1,22 @@
+# file system
+.DS_Store
+
 # ignore .venv
 .venv*
 
 # ignore ide
 .vscode
 
-# ignore local data
-data
-
 # ignore python cache
 __pycache__
 *.py[cod]
 .env
 
-# ignore classifiers
-models/*.classifier
-
 # Google API credentials
 credentials.json
 token.json
+
+# ignore local data
+data
+# ignore classifiers
+models/*.classifier

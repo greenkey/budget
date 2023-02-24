@@ -75,7 +75,7 @@ def test_get_updated_data_by_month(db):
     item_to_update.labels = "new labels"
     repo.update(item_to_update)
 
-    result = list(repo.get_updated_data_by_month(db))
+    result = list(repo.get_updated_data_by_month())
     assert len(result) == 1
     month, [record] = result[0]
     assert month == item_to_update.tx_date.strftime("%Y-%m")

@@ -70,10 +70,10 @@ class LedgerItemRepo:
                 continue
             yield models.LedgerItem(**row)
 
-    def get_updated_data_by_month(self, db) -> Iterable[tuple[str, Iterable[models.LedgerItem]]]:
+    def get_updated_data_by_month(self) -> Iterable[tuple[str, Iterable[models.LedgerItem]]]:
         # get all the months that have to_sync set to True
         query = "SELECT DISTINCT strftime('%Y-%m', tx_date) FROM ledger_items WHERE to_sync = 1"
-        for row in db.execute(query):
+        for row in self.db.execute(query):
             month = row[0]
             yield month, self.get_month_data(month, only_to_sync=True)
 
