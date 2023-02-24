@@ -1,9 +1,9 @@
 import enum
-import os
 import sqlite3
 from contextlib import contextmanager
 from typing import Any, Callable, Generator, Iterable
 
+import config
 from src import migrations, models
 
 Connection = sqlite3.Connection
@@ -14,7 +14,7 @@ def db_context(db_path: str | None = None) -> Generator[sqlite3.Connection, None
     """
     Get the default database
     """
-    db_path = db_path or os.environ.get("DB_PATH", ":memory:")
+    db_path = db_path or config.DB_PATH
     conn = sqlite3.connect(db_path)
     migrations.migrate(conn)
     try:
@@ -34,7 +34,7 @@ def db(fun: Callable) -> Callable:
 
     def wrapper(*args, **kwargs):
         with db_context() as db:
-            return fun(db, *args, **kwargs)
+            return fun(db=db, *args, **kwargs)
 
     return wrapper
 

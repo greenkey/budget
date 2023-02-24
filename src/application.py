@@ -40,10 +40,13 @@ def _import_file(file_path: Path, importer_class: type[extract.Importer]):
     return list(importer.get_ledger_items())
 
 
+@gsheet.sheet
 @sqlite.db
-def push_to_gsheet(db: sqlite.Connection, months: list[str] | None = None):
+def push_to_gsheet(
+    db: sqlite.Connection, sheet: gsheet.SheetConnection, months: list[str] | None = None
+):
     local_repo = sqlite.LedgerItemRepo(db)
-    remote_repo = gsheet.LedgerItemRepo(models.LedgerItem.get_field_names())
+    remote_repo = gsheet.LedgerItemRepo(sheet, models.LedgerItem.get_field_names())
 
     for month in months:
         logger.info(f"Pushing month {month}")
@@ -60,10 +63,15 @@ def push_to_gsheet(db: sqlite.Connection, months: list[str] | None = None):
             local_repo.mark_month_as_synced(month)
 
 
+@gsheet.sheet
 @sqlite.db
-def pull_from_gsheet(db: sqlite.Connection, months: list[str] | None = None):
+def pull_from_gsheet(
+    db: sqlite.Connection, sheet: gsheet.SheetConnection, months: list[str] | None = None
+):
     local_repo = sqlite.LedgerItemRepo(db)
-    remote_repo = gsheet.LedgerItemRepo(models.LedgerItem.get_field_names())
+    remote_repo = gsheet.LedgerItemRepo(
+        sheet_connection=sheet, header=models.LedgerItem.get_field_names()
+    )
 
     if not months:
         # get last three months
