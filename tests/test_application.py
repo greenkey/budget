@@ -1,8 +1,5 @@
-# all needed imports:
 from pathlib import Path
-from unittest.mock import MagicMock, call, patch
-
-import pytest
+from unittest.mock import MagicMock, patch
 
 from src import application, extract
 

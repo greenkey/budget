@@ -1,6 +1,6 @@
 import pytest
 
-from src import sqlite
+from src.ledger_repos import sqlite
 
 
 @pytest.fixture

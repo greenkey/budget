@@ -10,7 +10,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
 
 import config
-from src import sqlite
+from src.ledger_repos import sqlite
 
 
 class Classifier:

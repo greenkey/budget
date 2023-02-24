@@ -3,7 +3,8 @@ import logging
 from pathlib import Path
 
 import config
-from src import classifiers, extract, models, repo_ledger, sqlite
+from src import classifiers, extract, models, repo_ledger
+from src.ledger_repos import sqlite
 
 logger = logging.getLogger(__name__)
 

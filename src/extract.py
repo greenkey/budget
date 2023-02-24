@@ -1,6 +1,6 @@
 import abc
 from csv import DictReader
-from datetime import date, datetime
+from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Generator, Union

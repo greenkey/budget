@@ -4,7 +4,8 @@ from pathlib import Path
 from typing import Optional
 
 import config
-from src import application, gsheet, migrations, sqlite
+from src import application, gsheet, migrations
+from src.ledger_repos import sqlite
 
 logger = logging.getLogger(__name__)
 

@@ -1,5 +1,4 @@
-from src import sqlite
-from src.repo_ledger import DuplicateStrategy, LedgerItemRepo
+from src.ledger_repos.sqlite import DuplicateStrategy, LedgerItemRepo, query
 from tests import factories
 
 
@@ -8,7 +7,7 @@ def test_insert_ledger_item(db):
     repo = LedgerItemRepo(db)
     repo.insert(ledger_items)
 
-    result = list(sqlite.query("SELECT * FROM ledger_items", db=db))
+    result = list(query("SELECT * FROM ledger_items", db=db))
     assert len(result) == 3
     for i, ledger_item in enumerate(ledger_items):
         assert result[i]["tx_id"] == ledger_item.tx_id
@@ -26,7 +25,7 @@ def test_insert_when_importing_files(db):
     repo = LedgerItemRepo(db)
     repo.insert(ledger_items, duplicate_strategy=DuplicateStrategy.SKIP)
 
-    result = list(sqlite.query("SELECT * FROM ledger_items", db=db))
+    result = list(query("SELECT * FROM ledger_items", db=db))
     assert len(result) == 3
     assert {item["to_sync"] for item in result} == {True}
 
@@ -36,7 +35,7 @@ def test_insert_when_pulling(db):
     repo = LedgerItemRepo(db)
     repo.insert(ledger_items, duplicate_strategy=DuplicateStrategy.REPLACE)
 
-    result = list(sqlite.query("SELECT * FROM ledger_items", db=db))
+    result = list(query("SELECT * FROM ledger_items", db=db))
     assert len(result) == 3
     assert {item["to_sync"] for item in result} == {False}
 
@@ -52,7 +51,7 @@ def test_update(db):
     item_to_update.labels = "new labels"
     repo.update(item_to_update)
 
-    result = list(sqlite.query("SELECT * FROM ledger_items", db=db))
+    result = list(query("SELECT * FROM ledger_items", db=db))
     assert len(result) == 3
     for item in result:
         if item["tx_id"] == item_to_update.tx_id:
