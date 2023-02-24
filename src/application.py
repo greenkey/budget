@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 
 import config
-from src import classifiers, extract, models, repo_ledger
+from src import classifiers, extract, models, repo_ledger, sqlite
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +12,8 @@ class ExtractorNotFoundError(ValueError):
     pass
 
 
-def import_files(files: list[Path]):
+@sqlite.db
+def import_files(db: sqlite.Connection, files: list[Path]):
     """
     Search for all the files contained in the data folder, for each try all the Importers until one works, then store the data in the database
     """
@@ -29,7 +30,7 @@ def import_files(files: list[Path]):
             logger.error(f"Unable to import file {file}")
 
         if ledger_items:
-            repo = repo_ledger.LedgerItemRepo(config.DB_PATH)
+            repo = repo_ledger.LedgerItemRepo(db)
             repo.insert(ledger_items, duplicate_strategy=repo_ledger.DuplicateStrategy.SKIP)
 
 
@@ -38,8 +39,9 @@ def _import_file(file_path: Path, importer_class: type[extract.Importer]):
     return list(importer.get_ledger_items())
 
 
-def push_to_gsheet(months: list[str] | None = None):
-    local_repo = repo_ledger.LedgerItemRepo()
+@sqlite.db
+def push_to_gsheet(db: sqlite.Connection, months: list[str] | None = None):
+    local_repo = repo_ledger.LedgerItemRepo(db)
     remote_repo = repo_ledger.GSheetLedgerItemRepo(models.LedgerItem.get_field_names())
 
     for month in months:
@@ -54,10 +56,12 @@ def push_to_gsheet(months: list[str] | None = None):
         for month, data in local_repo.get_updated_data_by_month():
             logger.info(f"Pushing month {month}")
             remote_repo.update_month_data(month, data)
+            local_repo.mark_month_as_synced(month)
 
 
-def pull_from_gsheet(months: list[str] | None = None):
-    local_repo = repo_ledger.LedgerItemRepo()
+@sqlite.db
+def pull_from_gsheet(db: sqlite.Connection, months: list[str] | None = None):
+    local_repo = repo_ledger.LedgerItemRepo(db)
     remote_repo = repo_ledger.GSheetLedgerItemRepo(models.LedgerItem.get_field_names())
 
     if not months:
@@ -74,9 +78,10 @@ def pull_from_gsheet(months: list[str] | None = None):
         local_repo.replace_month_data(month, month_data)
 
 
-def guess(field: str, months: list[str]):
+@sqlite.db
+def guess(db: sqlite.Connection, field: str, months: list[str]):
     logger.info(f"Guessing {field}")
-    local_repo = repo_ledger.LedgerItemRepo()
+    local_repo = repo_ledger.LedgerItemRepo(db)
 
     classifier = classifiers.get_classifier(field)
 

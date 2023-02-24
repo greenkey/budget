@@ -17,8 +17,8 @@ class DuplicateStrategy(enum.Enum):
 
 
 class LedgerItemRepo:
-    def __init__(self, db_path: str | Path | None = None):
-        self.db_path = db_path or config.DB_PATH
+    def __init__(self, db: sqlite.Connection):
+        self.db = db
 
     def insert(
         self,
@@ -41,58 +41,55 @@ class LedgerItemRepo:
             for ledger_item in ledger_items:
                 ledger_item.to_sync = True
 
-        with sqlite.db_context(self.db_path) as db:
-            db.executemany(
-                f"""
-                INSERT {duplicate_strategy_str} INTO ledger_items ({fields}) VALUES ({placeholders})
-                """,
-                [models.asdict(ledger_item) for ledger_item in ledger_items],
-            )
-            db.commit()
+        self.db.executemany(
+            f"""
+            INSERT {duplicate_strategy_str} INTO ledger_items ({fields}) VALUES ({placeholders})
+            """,
+            [models.asdict(ledger_item) for ledger_item in ledger_items],
+        )
 
     def get_months(self) -> Iterable[str]:
         query = "SELECT DISTINCT strftime('%Y-%m', tx_date) FROM ledger_items ORDER BY tx_date"
-        with sqlite.db_context(self.db_path) as db:
-            for row in db.execute(query):
-                yield row[0]
+        for row in self.db.execute(query):
+            yield row[0]
 
     def get_month_data(
         self, month: str, only_to_sync: bool = False
     ) -> Iterable[models.LedgerItem]:
         query = "SELECT * FROM ledger_items WHERE strftime('%Y-%m', tx_date) = :month"
-        with sqlite.db_context(self.db_path) as db:
-            # create cursor for query
-            cursor = db.execute(query, {"month": month})
-            # get columns from curosor
-            columns = [column[0] for column in cursor.description]
-            # run query to get dictionaries from sqlite
-            for row in cursor.fetchall():
-                # create dict
-                row = dict(zip(columns, row))
-                # convert dictionaries to LedgerItem objects
-                if only_to_sync and not row["to_sync"]:
-                    continue
-                yield models.LedgerItem(**row)
+        # create cursor for query
+        cursor = self.db.execute(query, {"month": month})
+        # get columns from curosor
+        columns = [column[0] for column in cursor.description]
+        # run query to get dictionaries from sqlite
+        for row in cursor.fetchall():
+            # create dict
+            row = dict(zip(columns, row))
+            # convert dictionaries to LedgerItem objects
+            if only_to_sync and not row["to_sync"]:
+                continue
+            yield models.LedgerItem(**row)
 
-    def get_updated_data_by_month(self) -> Iterable[tuple[str, Iterable[models.LedgerItem]]]:
-        with sqlite.db_context(self.db_path) as db:
-            # get all the months that have to_sync set to True
-            query = (
-                "SELECT DISTINCT strftime('%Y-%m', tx_date) FROM ledger_items WHERE to_sync = 1"
-            )
-            for row in db.execute(query):
-                month = row[0]
-                yield month, self.get_month_data(month, only_to_sync=True)
+    def get_updated_data_by_month(self, db) -> Iterable[tuple[str, Iterable[models.LedgerItem]]]:
+        # get all the months that have to_sync set to True
+        query = "SELECT DISTINCT strftime('%Y-%m', tx_date) FROM ledger_items WHERE to_sync = 1"
+        for row in db.execute(query):
+            month = row[0]
+            yield month, self.get_month_data(month, only_to_sync=True)
+
+    def mark_month_as_synced(self, month: str):
+        self.db.execute(
+            "UPDATE ledger_items SET to_sync = FALSE WHERE strftime('%Y-%m', tx_date) = :month",
+            {"month": month},
+        )
 
     def replace_month_data(self, month: str, ledger_items: Iterable[models.LedgerItem]):
-        with sqlite.db_context(self.db_path) as db:
-            # delete all rows for the month
-            db.execute(
-                "DELETE FROM ledger_items WHERE strftime('%Y-%m', tx_date) = :month",
-                {"month": month},
-            )
-            # insert new rows
-            db.commit()
+        # delete all rows for the month
+        self.db.execute(
+            "DELETE FROM ledger_items WHERE strftime('%Y-%m', tx_date) = :month",
+            {"month": month},
+        )
+        # insert new rows
         self.insert(ledger_items, duplicate_strategy=DuplicateStrategy.REPLACE)
 
     def update(self, ledger_item: models.LedgerItem):
@@ -103,14 +100,12 @@ class LedgerItemRepo:
         # ensure to_sync is set to True
         ledger_item.to_sync = True
 
-        with sqlite.db_context(self.db_path) as db:
-            db.execute(
-                f"""
-                UPDATE ledger_items SET {set_string} WHERE tx_id = :tx_id
-                """,
-                models.asdict(ledger_item),
-            )
-            db.commit()
+        self.db.execute(
+            f"""
+            UPDATE ledger_items SET {set_string} WHERE tx_id = :tx_id
+            """,
+            models.asdict(ledger_item),
+        )
 
 
 def _range(month: str, range: str | None = None) -> str:
@@ -212,4 +207,5 @@ class GSheetLedgerItemRepo:
             # convert dates to datetime
             dict_data["tx_date"] = self._parse_datetime(dict_data["tx_date"]).date()
             dict_data["tx_datetime"] = self._parse_datetime(dict_data["tx_datetime"])
+            dict_data["to_sync"] = False
             yield models.LedgerItem(**dict_data)

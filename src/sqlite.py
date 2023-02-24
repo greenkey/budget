@@ -1,9 +1,11 @@
 import os
 import sqlite3
 from contextlib import contextmanager
-from typing import Any, Generator
+from typing import Any, Callable, Generator
 
-from src import migrations, models
+from src import migrations
+
+Connection = sqlite3.Connection
 
 
 @contextmanager
@@ -14,8 +16,14 @@ def db_context(db_path: str | None = None) -> Generator[sqlite3.Connection, None
     db_path = db_path or os.environ.get("DB_PATH", ":memory:")
     conn = sqlite3.connect(db_path)
     migrations.migrate(conn)
-    yield conn
-    conn.close()
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 def query(sql: str, db: sqlite3.Connection) -> Generator[dict[str, Any], None, None]:
@@ -26,3 +34,15 @@ def query(sql: str, db: sqlite3.Connection) -> Generator[dict[str, Any], None, N
     columns = [column[0] for column in cursor.description]
     for row in cursor:
         yield dict(zip(columns, row))
+
+
+def db(fun: Callable) -> Callable:
+    """
+    Decorator to use the default database
+    """
+
+    def wrapper(*args, **kwargs):
+        with db_context() as db:
+            return fun(db, *args, **kwargs)
+
+    return wrapper
