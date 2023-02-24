@@ -77,16 +77,11 @@ class Classifier:
             self.model.fit(self.vectorizer.fit_transform(X), y)
 
     def save(self):
-        store_classifier(self.model, self.vectorizer, self.field)
+        config.MODEL_FOLDER.mkdir(parents=True, exist_ok=True)
+        with open(config.MODEL_FOLDER / f"{self.field}.classifier", "wb") as f:
+            f.write(pickle.dumps(self))
 
 
 def get_classifier(field: str) -> Classifier:
     with open(config.MODEL_FOLDER / f"{field}.classifier", "rb") as f:
         return pickle.loads(f.read())
-
-
-def store_classifier(model: LogisticRegression, vectorizer: CountVectorizer, field: str):
-    classifier = Classifier(model, vectorizer, field)
-    config.MODEL_FOLDER.mkdir(parents=True, exist_ok=True)
-    with open(config.MODEL_FOLDER / f"{field}.classifier", "wb") as f:
-        f.write(pickle.dumps(classifier))
