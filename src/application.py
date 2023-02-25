@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 
 import config
-from src import classifiers, extract, models
+from src import classifiers, extractors, models
 from src.ledger_repos import gsheet, sqlite
 
 logger = logging.getLogger(__name__)
@@ -14,16 +14,16 @@ class ExtractorNotFoundError(ValueError):
 
 
 @sqlite.db
-def import_files(db: sqlite.Connection, files: list[Path]):
+def import_files(*, db: sqlite.Connection, files: list[Path]):
     """
     Search for all the files contained in the data folder, for each try all the Importers until one works, then store the data in the database
     """
     ledger_items = []
     for file in files:
-        for importer_class in extract.get_importers():
+        for importer_class in extractors.get_importers():
             try:
                 ledger_items = _import_file(file, importer_class)
-            except extract.FormatFileError as e:
+            except extractors.FormatFileError as e:
                 continue
             else:
                 break
@@ -35,7 +35,7 @@ def import_files(db: sqlite.Connection, files: list[Path]):
             repo.insert(ledger_items, duplicate_strategy=sqlite.DuplicateStrategy.SKIP)
 
 
-def _import_file(file_path: Path, importer_class: type[extract.Importer]):
+def _import_file(file_path: Path, importer_class: type[extractors.Importer]):
     importer = importer_class(file_path)
     return list(importer.get_ledger_items())
 
@@ -43,7 +43,7 @@ def _import_file(file_path: Path, importer_class: type[extract.Importer]):
 @gsheet.sheet
 @sqlite.db
 def push_to_gsheet(
-    db: sqlite.Connection, sheet: gsheet.SheetConnection, months: list[str] | None = None
+    *, db: sqlite.Connection, sheet: gsheet.SheetConnection, months: list[str] | None = None
 ):
     local_repo = sqlite.LedgerItemRepo(db)
     remote_repo = gsheet.LedgerItemRepo(sheet, models.LedgerItem.get_field_names())
@@ -66,7 +66,7 @@ def push_to_gsheet(
 @gsheet.sheet
 @sqlite.db
 def pull_from_gsheet(
-    db: sqlite.Connection, sheet: gsheet.SheetConnection, months: list[str] | None = None
+    *, db: sqlite.Connection, sheet: gsheet.SheetConnection, months: list[str] | None = None
 ):
     local_repo = sqlite.LedgerItemRepo(db)
     remote_repo = gsheet.LedgerItemRepo(
@@ -88,7 +88,7 @@ def pull_from_gsheet(
 
 
 @sqlite.db
-def guess(db: sqlite.Connection, field: str, months: list[str]):
+def guess(*, db: sqlite.Connection, field: str, months: list[str]):
     logger.info(f"Guessing {field}")
     local_repo = sqlite.LedgerItemRepo(db)
 

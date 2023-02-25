@@ -21,7 +21,7 @@ class Commands:
         files = [
             file for file in folder_path.iterdir() if file.is_file() and file != config.DB_PATH
         ]
-        application.import_files(files)
+        application.import_files(files=files)
 
     def migrate_local_db(self):
         with sqlite.db_context(config.DB_PATH) as db:

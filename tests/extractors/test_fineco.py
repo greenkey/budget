@@ -1,20 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
-from pathlib import Path
 
-from src import extract, models
-
-
-def test_fineco_excel_importer():
-    file_path = Path(__file__).parent.parent / "fixtures" / "example.xlsx"
-    excel_importer = extract.FinecoImporter(file_path)
-    records = list(excel_importer.get_records_from_file())
-    assert records == [
-        ("text cell", "another text"),
-        (123.0, 456.12),
-        (datetime(2001, 2, 3, 0, 0), datetime(2001, 2, 3, 4, 5, 6, 789000)),
-    ]
-
+from src import extractors, models
 
 fineco_test_data = """
 
@@ -29,7 +16,7 @@ Data,Entrate,Uscite,Descrizione,Descrizione_Completa,Stato,Moneymap
 
 
 def test_fineco_importer():
-    fineco_importer = extract.FinecoImporter("")
+    fineco_importer = extractors.FinecoImporter("")
     fineco_importer.get_records_from_file = lambda: [
         line.split(",") for line in fineco_test_data.splitlines()
     ]

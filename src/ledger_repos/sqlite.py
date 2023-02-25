@@ -34,7 +34,8 @@ def db(fun: Callable) -> Callable:
 
     def wrapper(*args, **kwargs):
         with db_context() as db:
-            return fun(db=db, *args, **kwargs)
+            kwargs["db"] = db
+            return fun(*args, **kwargs)
 
     return wrapper
 

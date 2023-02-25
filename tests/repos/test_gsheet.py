@@ -9,7 +9,7 @@ def test_commit_updates(sheet_mock):
 
     conn.update("A1", [["a", "b"]])
     conn.update("A2", [["c", "d"]])
-    conn.commit()
+    conn.flush()
 
     sheet_mock.values().batchUpdate.assert_called_once_with(
         spreadsheetId="fake_shee_id",
@@ -31,7 +31,7 @@ def test_commit_updates_and_clears(sheet_mock):
     conn.clear("A2")
     conn.update("A2", [["c", "d"]])
     conn.update("A3", [["e", "f"]])
-    conn.commit()
+    conn.flush()
 
     assert sheet_mock.values().mock_calls == [
         call.batchUpdate(
