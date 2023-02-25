@@ -23,7 +23,9 @@ def import_files(*, db: sqlite.Connection, files: list[Path]):
         for importer_class in extractors.get_importers():
             try:
                 ledger_items = _import_file(file, importer_class)
-            except extractors.FormatFileError as e:
+            except extractors.FormatFileError:
+                continue
+            except TypeError:
                 continue
             else:
                 break
@@ -37,7 +39,10 @@ def import_files(*, db: sqlite.Connection, files: list[Path]):
 
 def _import_file(file_path: Path, importer_class: type[extractors.Importer]):
     importer = importer_class(file_path)
-    return list(importer.get_ledger_items())
+    data = list(importer.get_ledger_items())
+    if data:
+        logger.debug(f"Importing {len(data)} items from {file_path}")
+    return data
 
 
 @gsheet.sheet

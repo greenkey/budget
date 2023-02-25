@@ -1,10 +1,14 @@
 import enum
+import logging
 import sqlite3
 from contextlib import contextmanager
 from typing import Any, Callable, Generator, Iterable
 
 import config
 from src import migrations, models
+
+logger = logging.getLogger(__name__)
+
 
 Connection = sqlite3.Connection
 
@@ -81,12 +85,13 @@ class LedgerItemRepo:
             for ledger_item in ledger_items:
                 ledger_item.to_sync = True
 
-        self.db.executemany(
+        result = self.db.executemany(
             f"""
             INSERT {duplicate_strategy_str} INTO ledger_items ({fields}) VALUES ({placeholders})
             """,
             [models.asdict(ledger_item) for ledger_item in ledger_items],
         )
+        logger.debug(f"Inserted {result.rowcount} rows")
 
     def get_months(self) -> Iterable[str]:
         query = "SELECT DISTINCT strftime('%Y-%m', tx_date) FROM ledger_items ORDER BY tx_date"

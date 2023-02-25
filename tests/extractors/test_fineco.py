@@ -17,7 +17,7 @@ Data,Entrate,Uscite,Descrizione,Descrizione_Completa,Stato,Moneymap
 
 def test_fineco_importer():
     fineco_importer = extractors.FinecoImporter("")
-    fineco_importer.get_records_from_file = lambda: [
+    fineco_importer.get_file_content = lambda: [
         line.split(",") for line in fineco_test_data.splitlines()
     ]
     ledger_items = list(fineco_importer.get_ledger_items())

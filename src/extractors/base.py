@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Generator, Union
 
 import openpyxl
+from pyparsing import Any
 
 from src import models
 
@@ -92,18 +93,26 @@ class CsvImporter(Importer):
 class ExcelImporter(Importer):
     skip_lines = 1
     header_line = 0
+    fields = []
 
-    def get_records_from_file(self) -> Generator[tuple, None, None]:
-        """
-        Open the excel file and return a generator of tuples containing the data
-        """
+    def get_file_content(self):
         try:
             workbook = openpyxl.load_workbook(str(self.source_file))
         except openpyxl.utils.exceptions.InvalidFileException:
             raise FormatFileError(f"Unable to open file {self.source_file}")
-        sheet = workbook.active
-        for row in sheet.rows:
-            yield tuple(cell.value for cell in row)
 
-    def get_ledger_items(self) -> Generator[models.LedgerItem, None, None]:
-        pass
+        sheet = workbook.active
+
+        return [[cell.value for cell in row] for row in sheet.rows]
+
+    def get_records_from_file(self) -> Generator[dict[str, Any], None, None]:
+        """
+        Open the excel file and return a generator of tuples containing the data
+        """
+        records = self.get_file_content()
+        header = records[self.header_line]
+        if self.fields != header:
+            raise FormatFileError(f"{self.source_file} does not contain expected fields")
+
+        for row in records[self.skip_lines :]:
+            yield dict(zip(header, row))

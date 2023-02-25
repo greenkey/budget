@@ -1,0 +1,50 @@
+from datetime import date, datetime
+from decimal import Decimal
+
+from src import extractors, models
+
+revolut_test_data = """Type,Product,Started Date,Completed Date,Description,Amount,Fee,Currency,State,Balance
+CARD_PAYMENT,Current,2021-12-09 1:47:29,2021-12-10 6:14:54,Tk Maxx,-23.98,0,GBP,COMPLETED,248.58
+ATM,Current,2021-12-08 8:56:27,2021-12-10 6:22:39,Cash at Notemachine,-20,0,GBP,COMPLETED,228.58
+EXCHANGE,Current,2021-12-10 8:29:30,2021-12-10 8:29:30,Exchanged to GBP,85.42,0,EUR,COMPLETED,314
+"""
+
+
+def test_revolut_importer():
+    revolut_importer = extractors.RevolutImporter("")
+    revolut_importer.get_file_content = lambda: [
+        line.split(",") for line in revolut_test_data.splitlines()
+    ]
+    ledger_items = list(revolut_importer.get_ledger_items())
+    assert sorted(ledger_items) == sorted(
+        [
+            models.LedgerItem(
+                tx_date=date(2021, 12, 9),
+                tx_datetime=datetime(2021, 12, 9, 1, 47, 29),
+                amount=Decimal("-23.98"),
+                currency="GBP",
+                description="Tk Maxx",
+                account="Revolut GBP",
+                ledger_item_type=models.LedgerItemType.EXPENSE,
+            ),
+            models.LedgerItem(
+                tx_date=date(2021, 12, 8),
+                tx_datetime=datetime(2021, 12, 8, 8, 56, 27),
+                amount=Decimal("-20"),
+                currency="GBP",
+                description="Cash at Notemachine",
+                account="Revolut GBP",
+                ledger_item_type=models.LedgerItemType.EXPENSE,
+            ),
+            models.LedgerItem(
+                tx_date=date(2021, 12, 10),
+                tx_datetime=datetime(2021, 12, 10, 8, 29, 30),
+                amount=Decimal("85.42"),
+                currency="EUR",
+                description="Exchanged to GBP",
+                account="Revolut EUR",
+                ledger_item_type=models.LedgerItemType.TRANSFER,
+                category="Transfer",
+            ),
+        ]
+    )
