@@ -172,8 +172,12 @@ class SheetConnection:
         self.update_to_commit = []
 
     def get(self, range: str):
-        result = self.sheet.values().get(spreadsheetId=self.sheet_id, range=range).execute()
-        return result.get("values", [])
+        try:
+            result = self.sheet.values().get(spreadsheetId=self.sheet_id, range=range).execute()
+        except HttpError as err:
+            return []
+        else:
+            return result.get("values", [])
 
 
 @contextmanager

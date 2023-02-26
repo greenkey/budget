@@ -55,7 +55,7 @@ class LedgerItem:
             self.tx_datetime = datetime.strptime(self.tx_datetime, "%Y-%m-%d %H:%M:%S")
         if not isinstance(self.amount, Decimal):
             if isinstance(self.amount, str):
-                self.amount = Decimal(self.amount.replace(",", ""))
+                self.amount = Decimal(self.amount.replace("€", "").replace(",", ""))
         if not isinstance(self.ledger_item_type, LedgerItemType):
             self.ledger_item_type = LedgerItemType(self.ledger_item_type)
         if not self.tx_id:
