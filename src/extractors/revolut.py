@@ -26,8 +26,10 @@ class RevolutImporter(base.ExcelImporter):
 
     def get_ledger_items(self) -> Generator[models.LedgerItem, None, None]:
         for item in self.get_records_from_file():
-            # convert the date from a string like '2021-04-27 3:33:19' to a date object
             tx_datetime = item["Started Date"]
+            if isinstance(tx_datetime, str):
+                # convert the date from a string like '2021-04-27 3:33:19' to a date object
+                tx_datetime = datetime.strptime(tx_datetime, "%Y-%m-%d %H:%M:%S")
 
             amount = Decimal(item["Amount"])
 

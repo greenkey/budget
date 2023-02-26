@@ -54,7 +54,7 @@ class CsvImporter(Importer):
         """
         Open the csv file and return a generator of tuples containing the data
         """
-        with open(self.source_file, "r") as f:
+        with open(self.source_file, "r", encoding="utf-8-sig") as f:
             reader = DictReader(f)
 
             # if the columns are not the expected ones, raise an error
