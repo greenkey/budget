@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class Commands:
-    def import_files(self, folder: Optional[str] = None):
+    def import_files(self, folder: Optional[str] = None, **kwargs):
         """
         Search for all the files contained in the data folder, for each try all the Importers until one works, then store the data in the database
         """
@@ -21,7 +21,10 @@ class Commands:
         files = [
             file for file in folder_path.iterdir() if file.is_file() and file != config.DB_PATH
         ]
-        application.import_files(files=files)
+        application.import_files(
+            files=files,
+            months=calculate_months(**kwargs),
+        )
 
     def migrate_local_db(self):
         with sqlite.db_context(config.DB_PATH) as db:
@@ -51,14 +54,19 @@ class Commands:
             months=calculate_months(**kwargs),
         )
 
-    def guess(self, field: str = "category", **kwargs):
+    def guess(self, fields: list[str] | None = None, to_sync_only=False, **kwargs):
         """
         Backup the database
         """
-        logger.info(f"Guessing field {field}")
+
+        if fields is None:
+            fields = ["category", "labels"]
+
+        logger.info(f"Guessing fields {fields}")
         application.guess(
-            field=field,
+            fields=fields,
             months=calculate_months(**kwargs),
+            to_sync_only=to_sync_only,
         )
 
     def chain(self, *commands: list[str]):
@@ -82,10 +90,10 @@ class Commands:
         """
         logger.info(f"Reviewing transactions for month {month}")
         self.pull(month=month)
+        self.import_files(month=month)
         self.train(field="category")
-        self.guess(month=month, field="category")
         self.train(field="labels")
-        self.guess(month=month, field="labels")
+        self.guess(month=month)
         self.push(month=month)
 
 

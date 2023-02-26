@@ -14,7 +14,7 @@ class ExtractorNotFoundError(ValueError):
 
 
 @sqlite.db
-def import_files(*, db: sqlite.Connection, files: list[Path]):
+def import_files(*, db: sqlite.Connection, files: list[Path], months: list[str] | None = None):
     """
     Search for all the files contained in the data folder, for each try all the Importers until one works, then store the data in the database
     """
@@ -34,6 +34,10 @@ def import_files(*, db: sqlite.Connection, files: list[Path]):
 
         if ledger_items:
             repo = sqlite.LedgerItemRepo(db)
+            if months:
+                ledger_items = [
+                    item for item in ledger_items if item.tx_date.strftime("%Y-%m") in months
+                ]
             repo.insert(ledger_items, duplicate_strategy=sqlite.DuplicateStrategy.SKIP)
 
 
@@ -93,25 +97,33 @@ def pull_from_gsheet(
 
 
 @sqlite.db
-def guess(*, db: sqlite.Connection, field: str, months: list[str]):
-    logger.info(f"Guessing {field}")
+def guess(*, db: sqlite.Connection, fields: str, months: list[str], to_sync_only: bool = False):
     local_repo = sqlite.LedgerItemRepo(db)
-
-    classifier = classifiers.get_classifier(field)
-
     data = sum((list(local_repo.get_month_data(month)) for month in months), start=[])
+    if to_sync_only:
+        data = [item for item in data if item.to_sync]
 
-    data_with_prediction = [
-        (item, classifier.predict_with_meta(item.description))
-        for item in data
-        if not getattr(item, field)
-    ]
+    data_with_prediction = []
+
+    for field in fields:
+        logger.info(f"Guessing {field}")
+        classifier = classifiers.get_classifier(field)
+        data_with_prediction.extend(
+            (item, field, classifier.predict_with_meta(item.description))
+            for item in data
+            if not getattr(item, field)
+        )
 
     # order by confidence
-    data_with_prediction.sort(key=lambda x: x[1][1], reverse=True)
+    data_with_prediction.sort(key=lambda x: x[2][1], reverse=True)
 
-    for item, (prediction, confidence, _) in data_with_prediction:
+    for item, field, (prediction, confidence, _) in data_with_prediction:
         if prediction:
+            if confidence > 0.7:
+                print(f"{field}:{prediction} | {item.description}")
+                setattr(item, field, prediction)
+                local_repo.update(item)
+                continue
             print(
                 "\n".join(
                     [
