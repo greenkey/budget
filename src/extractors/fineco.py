@@ -40,7 +40,19 @@ class FinecoImporter(base.ExcelImporter):
             else:
                 account = "Fineco EUR"
 
-            ledger_item = models.LedgerItem(
+            if description.startswith("ESTRATTO CONTO"):
+                yield models.LedgerItem(
+                    tx_date=tx_date,
+                    tx_datetime=datetime.combine(tx_date, datetime.min.time()),
+                    amount=-amount,
+                    currency="EUR",
+                    description=description,
+                    account="Fineco VISA",
+                    ledger_item_type=models.LedgerItemType.TRANSFER,
+                )
+                ledger_item_type = models.LedgerItemType.TRANSFER
+
+            yield models.LedgerItem(
                 tx_date=tx_date,
                 tx_datetime=datetime.combine(tx_date, datetime.min.time()),
                 amount=amount,
@@ -48,6 +60,4 @@ class FinecoImporter(base.ExcelImporter):
                 description=description,
                 account=account,
                 ledger_item_type=ledger_item_type,
-                # TODO: add counterparty, category and labels
             )
-            yield ledger_item
