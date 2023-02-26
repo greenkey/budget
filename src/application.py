@@ -111,7 +111,7 @@ def guess(*, db: sqlite.Connection, fields: str, months: list[str], to_sync_only
         data_with_prediction.extend(
             (item, field, classifier.predict_with_meta(item.description))
             for item in data
-            if not getattr(item, field)
+            if not all(getattr(item, f) for f in field.split(","))
         )
 
     # order by confidence
@@ -119,36 +119,17 @@ def guess(*, db: sqlite.Connection, fields: str, months: list[str], to_sync_only
 
     for item, field, (prediction, confidence, _) in data_with_prediction:
         if prediction:
-            if confidence > 0.7:
-                print(f"{field}:{prediction} | {item.description}")
+            print(f"{prediction} | {item.description}")
+            if "," in field:
+                to_update = {k: v for k, v in zip(field.split(","), prediction)}
+            else:
+                to_update = {field: prediction}
+            for field, prediction in to_update.items():
                 setattr(item, field, prediction)
-                local_repo.update(item)
-                continue
-            print(
-                "\n".join(
-                    [
-                        "----------",
-                        f"Description: {item.description}",
-                        f"Date: {item.tx_datetime}",
-                        f"Amount: {item.amount}",
-                    ]
-                )
-            )
-            new_value = input(f"[{prediction}, {confidence*100:.0f}] [q=quit, s=skip] : ")
-            if new_value == "q":
-                return
-            elif new_value == "s":
-                continue
-            elif not new_value.strip():
-                new_value = prediction
-
-            if new_value:
-                setattr(item, field, new_value)
-
             local_repo.update(item)
 
 
-def train(field: str):
-    classifier = classifiers.Classifier(field)
+def train(fields: str):
+    classifier = classifiers.Classifier(fields=fields.split(","))
     classifier.train(db_path=config.DB_PATH)
     classifier.save()

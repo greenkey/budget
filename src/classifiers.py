@@ -16,11 +16,11 @@ from src.ledger_repos import sqlite
 class Classifier:
     def __init__(
         self,
-        field: str,
+        fields: list[str],
         model: LogisticRegression | None = None,
         vectorizer: CountVectorizer | None = None,
     ):
-        self.field = field
+        self.fields = fields
         self.model = model
         self.vectorizer = vectorizer
         self.min_confidence = 0.66
@@ -34,7 +34,7 @@ class Classifier:
         prediction = self.model.classes_[highest]
         confidence = probability[highest]
         distance = probability[highest] - probability[second]
-        return prediction, confidence, distance
+        return prediction.split(","), confidence, distance
 
     def predict(self, text):
         prediction, confidence, distance = self.predict_with_meta(text)
@@ -45,13 +45,14 @@ class Classifier:
         nltk.download("all", quiet=True)
 
         with sqlite.db_context(db_path) as db:
+            label = "||','||".join(self.fields)
             data = pd.read_sql_query(
-                f"SELECT description as text, {self.field} as label"
+                f"SELECT description||','||ledger_item_type||','||account as text, {label} as label"
                 " FROM ledger_items"
                 " where description is not null"
                 " and description != ''"
-                f" and {self.field} is not null"
-                f" and {self.field} != ''"
+                f" and label is not null"
+                f" and label != ''"
                 "",
                 db,
             )
@@ -78,7 +79,7 @@ class Classifier:
 
     def save(self):
         config.MODEL_FOLDER.mkdir(parents=True, exist_ok=True)
-        with open(config.MODEL_FOLDER / f"{self.field}.classifier", "wb") as f:
+        with open(config.MODEL_FOLDER / f"{','.join(self.fields)}.classifier", "wb") as f:
             f.write(pickle.dumps(self))
 
 

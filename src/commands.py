@@ -60,7 +60,7 @@ class Commands:
         """
 
         if fields is None:
-            fields = ["category", "labels"]
+            fields = ["category,labels"]
 
         logger.info(f"Guessing fields {fields}")
         application.guess(
@@ -77,12 +77,12 @@ class Commands:
             fun = getattr(self, command)
             fun()
 
-    def train(self, field: str = "category"):
+    def train(self, fields: str = "category"):
         """
         Train the classifier
         """
-        logger.info(f"Training classifier for field {field}")
-        application.train(field=field)
+        logger.info(f"Training classifier for fields {fields}")
+        application.train(fields=fields)
 
     def review(self, month: str):
         """
@@ -91,8 +91,7 @@ class Commands:
         logger.info(f"Reviewing transactions for month {month}")
         self.pull(month=month)
         self.import_files(month=month)
-        self.train(field="category")
-        self.train(field="labels")
+        self.train(fields="category,labels")
         self.guess(month=month)
         self.push(month=month)
 
