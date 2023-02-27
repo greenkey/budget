@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 from decimal import Decimal
 from typing import Generator
@@ -40,6 +41,20 @@ class FinecoImporter(base.ExcelImporter):
             else:
                 account = "Fineco EUR"
 
+            meta_data = dict(
+                re.findall(
+                    r"([\S]+): ([^:]+) ",
+                    description.replace("Banca Ord:", "Banca-Ord:"),
+                )
+            )
+
+            counterparty = meta_data.get("Ord")
+            if counterparty is None or counterparty in ("MELE LORENZO", "Lorenzo Mele"):
+                counterparty = meta_data.get("Ben")
+            if counterparty in ("MELE LORENZO", "Lorenzo Mele"):
+                counterparty = None
+                ledger_item_type = models.LedgerItemType.TRANSFER
+
             if description.startswith("ESTRATTO CONTO"):
                 yield models.LedgerItem(
                     tx_date=tx_date,
@@ -49,6 +64,7 @@ class FinecoImporter(base.ExcelImporter):
                     description=description,
                     account="Fineco VISA",
                     ledger_item_type=models.LedgerItemType.TRANSFER,
+                    counterparty=counterparty,
                 )
                 ledger_item_type = models.LedgerItemType.TRANSFER
 
@@ -60,4 +76,5 @@ class FinecoImporter(base.ExcelImporter):
                 description=description,
                 account=account,
                 ledger_item_type=ledger_item_type,
+                counterparty=counterparty,
             )
