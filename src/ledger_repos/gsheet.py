@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import datetime
 import os.path
+import time
 from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import cache
@@ -90,6 +91,7 @@ class SheetConnection:
     def __init__(self, sheet_id: str):
         self.sheet_id = sheet_id
         self.operations_to_commit: list[Operation] = []
+        self.last_flushed = datetime.datetime.now()
 
     @property
     def sheet(self):
@@ -147,6 +149,10 @@ class SheetConnection:
         return request.execute()
 
     def _flush(self, op_type: str, queue):
+        # wait until the last operation is at least 1 second old to avoid hitting the rate limit
+        while (datetime.datetime.now() - self.last_flushed) < datetime.timedelta(seconds=1):
+            time.sleep(0.1)
+        self.last_flushed = datetime.datetime.now()
         if queue:
             if op_type == "update":
                 self._update(queue)
