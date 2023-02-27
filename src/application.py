@@ -109,7 +109,7 @@ def guess(*, db: sqlite.Connection, fields: str, months: list[str], to_sync_only
         logger.info(f"Guessing {field}")
         classifier = classifiers.get_classifier(field)
         data_with_prediction.extend(
-            (item, field, classifier.predict_with_meta(item.description))
+            (item, field, classifier.predict_with_meta(models.asdict(item)))
             for item in data
             if not all(getattr(item, f) for f in field.split(","))
         )

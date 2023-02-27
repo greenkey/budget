@@ -21,13 +21,20 @@ class Classifier:
         vectorizer: CountVectorizer | None = None,
     ):
         self.fields = fields
+        self.text_fields = [
+            "description",
+            "counterparty",
+            # "ledger_item_type",
+            # "account",
+        ]
         self.model = model
         self.vectorizer = vectorizer
         self.min_confidence = 0.66
         self.min_distance = 0.33
 
-    def predict_with_meta(self, text):
-        probability = self.model.predict_proba(self.vectorizer.transform([text]))[0]
+    def predict_with_meta(self, item):
+        item = ",".join(item[field] for field in self.text_fields)
+        probability = self.model.predict_proba(self.vectorizer.transform([item]))[0]
         probs = np.argsort(probability)
         highest = probs[-1]
         second = probs[-2]
@@ -36,8 +43,8 @@ class Classifier:
         distance = probability[highest] - probability[second]
         return prediction.split(","), confidence, distance
 
-    def predict(self, text):
-        prediction, confidence, distance = self.predict_with_meta(text)
+    def predict(self, item: dict[str, str]):
+        prediction, confidence, distance = self.predict_with_meta(item)
         if confidence >= self.min_confidence and distance >= self.min_distance:
             return prediction
 
@@ -46,11 +53,12 @@ class Classifier:
 
         with sqlite.db_context(db_path) as db:
             label = "||','||".join(self.fields)
+            text_fields = "||','||".join(self.text_fields)
             data = pd.read_sql_query(
-                f"SELECT description||','||ledger_item_type||','||account as text, {label} as label"
+                f"SELECT {text_fields} as text, {label} as label"
                 " FROM ledger_items"
-                " where description is not null"
-                " and description != ''"
+                " where text is not null"
+                " and text != ''"
                 f" and label is not null"
                 f" and label != ''"
                 "",

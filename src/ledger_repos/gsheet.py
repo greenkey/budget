@@ -160,14 +160,15 @@ class SheetConnection:
                 self._clear(queue)
             else:
                 raise Exception(f"Unknown operation type: {op_type}")
-        return "", []
 
     def flush(self):
         queue = []
         op_type = ""
         for op in self.operations_to_commit[:]:
             if op.type != op_type:
-                op_type, queue = self._flush(op_type, queue)
+                self._flush(op_type, queue)
+                queue = []
+                op_type = ""
                 for committed_op in queue:
                     self.operations_to_commit.remove(committed_op)
             queue.append(op)

@@ -17,6 +17,6 @@ credentials.json
 token.json
 
 # ignore local data
-data
+data*
 # ignore classifiers
 models/*.classifier
