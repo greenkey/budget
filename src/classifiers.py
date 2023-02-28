@@ -33,7 +33,7 @@ class Classifier:
         self.min_distance = 0.33
 
     def predict_with_meta(self, item):
-        item = ",".join(item[field] for field in self.text_fields)
+        item = ",".join(item.get(field) or "" for field in self.text_fields)
         probability = self.model.predict_proba(self.vectorizer.transform([item]))[0]
         probs = np.argsort(probability)
         highest = probs[-1]
