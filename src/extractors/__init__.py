@@ -3,3 +3,4 @@ from .fineco import FinecoImporter
 from .paypal import PaypalImporter
 from .revolut import RevolutImporter
 from .satispay import SatispayImporter
+from .splitwise import SplitwiseImporter
