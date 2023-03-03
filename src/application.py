@@ -96,8 +96,25 @@ def pull_from_gsheet(
         local_repo.replace_month_data(month, month_data)
 
 
+def train(classifier_names: list[str] | None = None):
+    classifier_classes = classifiers.get_classifiers()
+    if classifier_names:
+        classifier_classes = [c for c in classifier_classes if c.__name__ in classifier_names]
+    for classifier_class in classifier_classes:
+        classifier = classifier_class()
+        logger.info(f"training {classifier.name}")
+        classifier.train(db_path=config.DB_PATH)
+        classifier.save()
+
+
 @sqlite.db
-def guess(*, db: sqlite.Connection, fields: str, months: list[str], to_sync_only: bool = False):
+def guess(
+    *,
+    db: sqlite.Connection,
+    classifier_names: list[str],
+    months: list[str],
+    to_sync_only: bool = False,
+):
     local_repo = sqlite.LedgerItemRepo(db)
     data = sum((list(local_repo.get_month_data(month)) for month in months), start=[])
     if to_sync_only:
@@ -105,14 +122,43 @@ def guess(*, db: sqlite.Connection, fields: str, months: list[str], to_sync_only
 
     data_with_prediction = []
 
-    for field in fields:
-        logger.info(f"Guessing {field}")
-        classifier = classifiers.get_classifier(field)
-        data_with_prediction.extend(
-            (item, field, classifier.predict_with_meta(models.asdict(item)))
-            for item in data
-            if not all(getattr(item, f) for f in field.split(","))
-        )
+    classifier_classes = classifiers.get_classifiers()
+    if classifier_names:
+        classifier_classes = [c for c in classifier_classes if c.__name__ in classifier_names]
+    classifiers_: list[classifiers.ClassifierInterface] = [
+        loaded for c in classifier_classes if (loaded := c().load())
+    ]
+
+    for item in data:
+        item_dict = models.asdict(item)
+        while True:
+            predictions = [classifier.predict_with_meta(item_dict) for classifier in classifiers_]
+            field_predictions = sorted(
+                [
+                    (field, value, confidence, distance)
+                    for prediction_data, confidence, distance in predictions
+                    for field, value in prediction_data.items()
+                    if not item_dict[field] and value
+                ],
+                key=lambda x: x[2],  # confidence
+                reverse=True,
+            )
+            if not field_predictions:
+                break
+            field, value, confidence, distance = field_predictions[0]
+            if confidence < 0.5:
+                break
+            if distance < confidence / 2:
+                break
+            item_dict[field] = value
+
+        update = False
+        for field, value in item_dict.items():
+            if getattr(item, field) != value:
+                setattr(item, field, value)
+                update = True
+        if update:
+            local_repo.update(item)
 
     # order by confidence
     data_with_prediction.sort(key=lambda x: x[2][1], reverse=True)
@@ -127,9 +173,3 @@ def guess(*, db: sqlite.Connection, fields: str, months: list[str], to_sync_only
             for field, prediction in to_update.items():
                 setattr(item, field, prediction)
             local_repo.update(item)
-
-
-def train(fields: str):
-    classifier = classifiers.Classifier(fields=fields.split(","))
-    classifier.train(db_path=config.DB_PATH)
-    classifier.save()

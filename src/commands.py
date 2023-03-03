@@ -54,21 +54,6 @@ class Commands:
             months=calculate_months(**kwargs),
         )
 
-    def guess(self, fields: list[str] | None = None, to_sync_only=False, **kwargs):
-        """
-        Backup the database
-        """
-
-        if fields is None:
-            fields = ["category,labels"]
-
-        logger.info(f"Guessing fields {fields}")
-        application.guess(
-            fields=fields,
-            months=calculate_months(**kwargs),
-            to_sync_only=to_sync_only,
-        )
-
     def chain(self, *commands: list[str]):
         """
         Run a chain of commands
@@ -77,12 +62,23 @@ class Commands:
             fun = getattr(self, command)
             fun()
 
-    def train(self, fields: str = "category"):
+    def train(self, classifiers: list[str] | None = None):
         """
         Train the classifier
         """
-        logger.info(f"Training classifier for fields {fields}")
-        application.train(fields=fields)
+        logger.info(f"Training classifiers: {classifiers}")
+        application.train(classifier_names=classifiers)
+
+    def guess(self, classifiers: list[str] | None = None, to_sync_only=False, **kwargs):
+        """
+        Backup the database
+        """
+
+        application.guess(
+            classifier_names=classifiers,
+            months=calculate_months(**kwargs),
+            to_sync_only=to_sync_only,
+        )
 
     def review(self, month: str):
         """
@@ -91,7 +87,7 @@ class Commands:
         logger.info(f"Reviewing transactions for month {month}")
         self.pull(month=month)
         self.import_files(month=month)
-        self.train(fields="category,labels")
+        self.train()
         self.guess(month=month)
         self.push(month=month)
 
