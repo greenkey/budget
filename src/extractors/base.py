@@ -8,20 +8,14 @@ from typing import Generator, Union
 import openpyxl
 from pyparsing import Any
 
-from src import models
+from src import models, utils
 
 
 def get_importers() -> Generator[type["Importer"], None, None]:
     """
     Return a generator of all the importers
     """
-    yield from get_all_subclasses(Importer)
-
-
-def get_all_subclasses(cls) -> Generator[type, None, None]:
-    for subclass in cls.__subclasses__():
-        yield subclass
-        yield from get_all_subclasses(subclass)
+    yield from utils.get_all_subclasses(Importer)
 
 
 class FormatFileError(ValueError):
