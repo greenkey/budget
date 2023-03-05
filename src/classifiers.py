@@ -1,6 +1,8 @@
 import abc
 import pickle
 import re
+from collections import defaultdict
+from itertools import groupby
 from pathlib import Path
 
 import nltk
@@ -8,7 +10,7 @@ import numpy as np
 import pandas as pd
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
-from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from sklearn.linear_model import LogisticRegression
 
 import config
@@ -64,6 +66,7 @@ class SimpleClassifier(ClassifierInterface, abc.ABC):
     def __init__(self):
         self.model = LogisticRegression(max_iter=1000)
         self.vectorizer = CountVectorizer()
+        # self.vectorizer = TfidfTransformer()
         self.lemmatizer = WordNetLemmatizer()
 
     def _transform_item(self, item: dict[str, str]) -> str:
@@ -142,8 +145,51 @@ class CategoryFromDescriptionCounterpartyClassifier(SimpleClassifier):
 #     ]
 
 
-class CounterpartyFromDescriptionClassifier(SimpleClassifier):
-    label_fields = ["counterparty"]
-    text_fields = [
-        "description",
-    ]
+def _submap():
+    return defaultdict(int)
+
+
+class CounterpartyFromDescriptionClassifier(ClassifierInterface):
+    def __init__(self):
+        self.map = defaultdict(dict)
+
+    def train(self, db_path: str | Path):
+        with sqlite.db_context(db_path) as db:
+            sql = """
+                SELECT counterparty, category
+                FROM ledger_items
+                where counterparty is not null
+                and counterparty != ''
+                """
+
+            self.map = defaultdict(_submap)
+            data = sqlite.query(sql, db)
+            for item in data:
+                counterparty = item["counterparty"]
+                category = item["category"] or None
+                self.map[counterparty][category] += 1
+
+    def predict_with_meta(self, item: dict[str, str]) -> tuple[dict[str, str], float, float]:
+        if data := self.map.get(item["counterparty"]):
+            total = sum(data.values())
+            ordered = sorted(data.items(), key=lambda x: x[1], reverse=True)
+            category = ordered[0][0]
+            confidence = ordered[0][1] / total
+            if len(ordered) == 1:
+                distance = 0.0
+            else:
+                distance = (ordered[0][1] - ordered[1][1]) / total
+            return {"category": category}, confidence, distance
+        return {"category": ""}, 0.0, 0.0
+
+    def save(self):
+        config.MODEL_FOLDER.mkdir(parents=True, exist_ok=True)
+        with open(config.MODEL_FOLDER / f"{self.name}.classifier", "wb") as f:
+            f.write(pickle.dumps(self))
+
+    def load(self):
+        try:
+            with open(config.MODEL_FOLDER / f"{self.name}.classifier", "rb") as f:
+                return pickle.loads(f.read())
+        except FileNotFoundError:
+            return None
