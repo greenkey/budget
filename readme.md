@@ -6,6 +6,13 @@
    to get a `credentials.json` file
 1. Run `./run.py setup_gsheet`
 
+## If you want to connect to Splitwise API
+
+1. Register a new app [here](https://secure.splitwise.com/oauth_clients)
+1. Create an API key too
+1. Set `SPLITWISE_CONSUMER_KEY`, `SPLITWISE_CONSUMER_SECRET` and `SPLITWISE_API_KEY` in your `.env`
+
+
 ## Usage
 
 To import files from a folder run:
