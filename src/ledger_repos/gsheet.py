@@ -25,13 +25,16 @@ SCOPES = [
 ]
 
 
-def get_creds():
+def get_creds(force: bool = False):
     creds = None
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
     # time.
     if os.path.exists("token.json"):
-        creds = Credentials.from_authorized_user_file("token.json", SCOPES)
+        if force:
+            os.remove("token.json")
+        else:
+            creds = Credentials.from_authorized_user_file("token.json", SCOPES)
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
@@ -45,12 +48,15 @@ def get_creds():
     return creds
 
 
-def main():
+def main(force: bool = False):
     """
     hows basic usage of the Sheets API.
     Prints values from a sample spreadsheet.
     """
-    creds = get_creds()
+
+
+def main(force: bool = False):
+    creds = get_creds(force=force)
 
     try:
         service = build("sheets", "v4", credentials=creds)

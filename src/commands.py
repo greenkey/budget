@@ -30,11 +30,11 @@ class Commands:
         with sqlite.db_context(config.DB_PATH) as db:
             migrations.migrate(db)
 
-    def setup_gsheet(self):
+    def setup_gsheet(self, force: bool = False):
         """
         Setup the google sheet
         """
-        gsheet.main()
+        gsheet.main(force=force)
 
     def push(self, **kwargs):
         """
