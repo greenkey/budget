@@ -41,6 +41,26 @@ def import_files(*, db: sqlite.Connection, files: list[Path], months: list[str] 
             repo.insert(ledger_items, duplicate_strategy=sqlite.DuplicateStrategy.SKIP)
 
 
+@sqlite.db
+def download(*, db: sqlite.Connection, months: list[str] | None = None):
+    """
+    Download the transactions for a given month
+    """
+    logger.info(f"Downloading transactions for {months}")
+    repo = sqlite.LedgerItemRepo(db)
+    for downloader_class in extractors.get_downloaders():
+        client = downloader_class()
+
+        if months:
+            ledger_items = []
+            for month in months:
+                ledger_items.extend(client.get_ledger_items(month))
+        else:
+            ledger_items = client.get_ledger_items()
+
+        repo.insert(ledger_items, duplicate_strategy=sqlite.DuplicateStrategy.SKIP)
+
+
 def _import_file(file_path: Path, importer_class: type[extractors.Importer]):
     importer = importer_class(file_path)
     data = list(importer.get_ledger_items())

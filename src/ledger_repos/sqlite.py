@@ -80,8 +80,8 @@ class LedgerItemRepo:
         }[duplicate_strategy]
 
         # if we are skipping duplicates, it means we are in import phase, we want to sync them
+        ledger_items = list(ledger_items)
         if duplicate_strategy == DuplicateStrategy.SKIP:
-            ledger_items = list(ledger_items)
             for ledger_item in ledger_items:
                 ledger_item.to_sync = True
 

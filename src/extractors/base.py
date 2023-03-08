@@ -3,7 +3,7 @@ from csv import DictReader
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
-from typing import Generator, Union
+from typing import Generator, Optional, Union
 
 import openpyxl
 from pyparsing import Any
@@ -18,6 +18,13 @@ def get_importers() -> Generator[type["Importer"], None, None]:
     yield from utils.get_all_subclasses(Importer)
 
 
+def get_downloaders() -> Generator[type["Downloader"], None, None]:
+    """
+    Return a generator of all the importers
+    """
+    yield from utils.get_all_subclasses(Downloader)
+
+
 class FormatFileError(ValueError):
     pass
 
@@ -28,6 +35,17 @@ class Importer(abc.ABC):
 
     @abc.abstractmethod
     def get_ledger_items(self) -> Generator[models.LedgerItem, None, None]:
+        raise NotImplementedError()
+
+
+class Downloader(abc.ABC):
+    def __init__(self, file_path: Union[str, Path]):
+        self.source_file = Path(file_path)
+
+    @abc.abstractmethod
+    def get_ledger_items(
+        self, month: str | None = None
+    ) -> Generator[models.LedgerItem, None, None]:
         raise NotImplementedError()
 
 

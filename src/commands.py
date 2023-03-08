@@ -26,6 +26,24 @@ class Commands:
             months=calculate_months(**kwargs),
         )
 
+    def download(self, **kwargs):
+        """
+        Download the transactions for a given month
+        """
+        months = calculate_months(**kwargs)
+        logger.info(f"Downloading transactions for {months}")
+        application.download(
+            months=months,
+        )
+
+    def fetch(self, month: str):
+        """
+        Run import and download
+        """
+        logger.info(f"Fetching transactions for month {month}")
+        self.import_files(month=month)
+        self.download(month=month)
+
     def migrate_local_db(self):
         with sqlite.db_context(config.DB_PATH) as db:
             migrations.migrate(db)
@@ -86,7 +104,7 @@ class Commands:
         """
         logger.info(f"Reviewing transactions for month {month}")
         self.pull(month=month)
-        self.import_files(month=month)
+        self.fetch(month=month)
         self.train()
         self.guess(month=month)
         self.push(month=month)

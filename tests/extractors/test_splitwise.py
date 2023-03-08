@@ -82,7 +82,7 @@ def test_splitwise_online_retriever():
     ]
     client.getExpenses.return_value = expenses
 
-    service = extractors.splitwise.SplitWiseService(client)
+    service = extractors.splitwise.SplitWiseDownloader(client)
 
     ledger_items = list(service.get_ledger_items())
 
@@ -110,3 +110,40 @@ def test_splitwise_online_retriever():
             ),
         ]
     )
+
+
+def test_splitwise_online_retriever():
+    client = MagicMock()
+    current_user = factories.CurrentUser()
+    client.getCurrentUser.return_value = current_user
+    expenses = [
+        factories.Expense(
+            date="2023-01-19T10:41:51Z",
+            users=[factories.ExpenseUserDict(user__id=current_user.id)],
+        ),
+        factories.Expense(
+            date="2023-01-25T10:41:51Z",
+            users=[factories.ExpenseUserDict(user__id=current_user.id)],
+        ),
+        factories.Expense(
+            date="2023-02-18T10:41:51Z",
+            users=[factories.ExpenseUserDict(user__id=current_user.id)],
+        ),
+        factories.Expense(
+            date="2023-02-25T10:41:51Z",
+            users=[factories.ExpenseUserDict(user__id=current_user.id)],
+        ),
+        factories.Expense(
+            date="2023-03-01T00:00:00Z",
+            users=[factories.ExpenseUserDict(user__id=current_user.id)],
+        ),
+    ]
+    client.getExpenses.return_value = expenses
+
+    service = extractors.splitwise.SplitWiseDownloader(client)
+
+    ledger_items = list(service.get_ledger_items(month="2023-02"))
+
+    assert set(item.tx_date.month for item in ledger_items) == {
+        2,
+    }
