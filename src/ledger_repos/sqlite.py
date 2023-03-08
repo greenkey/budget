@@ -85,6 +85,8 @@ class LedgerItemRepo:
             for ledger_item in ledger_items:
                 ledger_item.to_sync = True
 
+        logger.debug(f"Inserting {len(ledger_items)} items into the database")
+
         result = self.db.executemany(
             f"""
             INSERT {duplicate_strategy_str} INTO ledger_items ({fields}) VALUES ({placeholders})
