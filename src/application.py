@@ -1,6 +1,10 @@
 import datetime
 import logging
+from decimal import Decimal
 from pathlib import Path
+from typing import Iterable
+
+import currency_converter
 
 import config
 from src import classifiers, extractors, models
@@ -9,12 +13,15 @@ from src.ledger_repos import gsheet, sqlite
 logger = logging.getLogger(__name__)
 
 
+################
+### GET DATA
+
+
 class ExtractorNotFoundError(ValueError):
     pass
 
 
-@sqlite.db
-def import_files(*, db: sqlite.Connection, files: list[Path], months: list[str] | None = None):
+def import_files(*, files: list[Path], months: list[str] | None = None):
     """
     Search for all the files contained in the data folder, for each try all the Importers until one works, then store the data in the database
     """
@@ -33,21 +40,26 @@ def import_files(*, db: sqlite.Connection, files: list[Path], months: list[str] 
             logger.error(f"Unable to import file {file}")
 
         if ledger_items:
-            repo = sqlite.LedgerItemRepo(db)
             if months:
                 ledger_items = [
                     item for item in ledger_items if item.tx_date.strftime("%Y-%m") in months
                 ]
-            repo.insert(ledger_items, duplicate_strategy=sqlite.DuplicateStrategy.SKIP)
+            store(items=ledger_items, duplicate_strategy=sqlite.DuplicateStrategy.SKIP)
 
 
-@sqlite.db
-def download(*, db: sqlite.Connection, months: list[str] | None = None):
+def _import_file(file_path: Path, importer_class: type[extractors.Importer]):
+    importer = importer_class(file_path)
+    data = list(importer.get_ledger_items())
+    if data:
+        logger.debug(f"Importing {len(data)} items from {file_path}")
+    return data
+
+
+def download(*, months: list[str] | None = None):
     """
     Download the transactions for a given month
     """
     logger.info(f"Downloading transactions for {months}")
-    repo = sqlite.LedgerItemRepo(db)
     for downloader_class in extractors.get_downloaders():
         client = downloader_class()
 
@@ -58,15 +70,56 @@ def download(*, db: sqlite.Connection, months: list[str] | None = None):
         else:
             ledger_items = client.get_ledger_items()
 
-        repo.insert(ledger_items, duplicate_strategy=sqlite.DuplicateStrategy.SKIP)
+        store(items=ledger_items, duplicate_strategy=sqlite.DuplicateStrategy.SKIP)
 
 
-def _import_file(file_path: Path, importer_class: type[extractors.Importer]):
-    importer = importer_class(file_path)
-    data = list(importer.get_ledger_items())
-    if data:
-        logger.debug(f"Importing {len(data)} items from {file_path}")
-    return data
+################
+### STORE DATA
+
+
+@sqlite.db
+def store(
+    *,
+    db: sqlite.Connection,
+    items: list[models.LedgerItem],
+    duplicate_strategy: sqlite.DuplicateStrategy | None = None,
+):
+    """
+    Store the transactions in the main database
+    """
+    repo = sqlite.LedgerItemRepo(db)
+    duplicate_strategy = duplicate_strategy or sqlite.DuplicateStrategy.RAISE
+
+    # process items to add EUR amount
+    items = _set_amount_eur(items)
+
+    # TODO: process items with classifiers
+
+    repo.insert(
+        items,
+        duplicate_strategy=duplicate_strategy,
+    )
+
+
+def _set_amount_eur(items: Iterable[models.LedgerItem]) -> Iterable[models.LedgerItem]:
+    """
+    Set the amount in EUR for the transactions
+    """
+    c = currency_converter.CurrencyConverter(
+        currency_converter.ECB_URL, fallback_on_missing_rate=True, decimal=True
+    )
+    for item in items:
+        if item.currency == "EUR":
+            item.amount_eur = item.amount
+        else:
+            item.amount_eur = c.convert(
+                Decimal(str(item.amount)), item.currency, "EUR", date=item.tx_date
+            )
+        yield item
+
+
+################
+### GOOGLE SHEET
 
 
 @gsheet.sheet
@@ -79,9 +132,7 @@ def push_to_gsheet(
 
     for month in months:
         logger.info(f"Pushing month {month}")
-        # get month data
         month_data = local_repo.get_month_data(month)
-        # replace the content of the sheet
         remote_repo.replace_month_data(month, month_data)
 
     if not months:
@@ -110,10 +161,13 @@ def pull_from_gsheet(
             day = day.replace(day=1) - datetime.timedelta(days=1)
 
     for month in months:
-        # get month data
         month_data = remote_repo.get_month_data(month)
-        # replace the content of the sheet
+        month_data = _set_amount_eur(month_data)
         local_repo.replace_month_data(month, month_data)
+
+
+################
+### TRAIN AND GUESS
 
 
 def train(classifier_names: list[str] | None = None):

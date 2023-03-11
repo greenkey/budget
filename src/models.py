@@ -33,16 +33,13 @@ class LedgerItem:
     description: str
     account: str
     ledger_item_type: LedgerItemType  # enum containing TRANSFER, EXPENSE, INCOME
+    amount_eur: Decimal | None = None
     tx_id: str | None = None
     event_name: str | None = None
     counterparty: str | None = None
     category: str | None = None
     labels: str | None = None  # comma separated list of labels
     to_sync: bool = False
-
-    # TODO: automatically calculate the amount in EUR
-    # @property
-    # def amount_EUR(self) -> Decimal:
 
     def __lt__(self, other: "LedgerItem") -> bool:
         # implement a check against hash to avoid duplicates

@@ -238,17 +238,16 @@ class LedgerItemRepo:
         return sorted(months)
 
     def _clear_month(self, month: str):
-        if month in self.get_months():
-            self.sheet_connection.clear(_range(month, "2:9999"))
-        else:
+        if month not in self.get_months():
             self._create_month_sheet(month)
+        self._set_header(month)
+        self.sheet_connection.clear(_range(month, "2:9999"))
 
     def _create_month_sheet(self, month: str):
         body = {"requests": {"addSheet": {"properties": {"title": _range(month)}}}}
         self.sheet_connection.sheet.batchUpdate(
             spreadsheetId=self.sheet_connection.sheet_id, body=body
         ).execute()
-        self._set_header(month)
 
     def replace_month_data(self, month: str, ledger_items: Iterable[models.LedgerItem]):
         self._clear_month(month)

@@ -17,6 +17,7 @@ migrations = {
         )""",
     2: """alter table ledger_items add column event_name TEXT""",
     3: """alter table ledger_items add column to_sync INTEGER""",
+    4: """alter table ledger_items add column amount_eur TEXT""",
 }
 
 
