@@ -13,7 +13,7 @@ from src.ledger_repos import gsheet, sqlite
 logger = logging.getLogger(__name__)
 
 
-################
+############
 ### GET DATA
 
 
@@ -73,7 +73,7 @@ def download(*, months: list[str] | None = None):
         store(items=ledger_items, duplicate_strategy=sqlite.DuplicateStrategy.SKIP)
 
 
-################
+##############
 ### STORE DATA
 
 
@@ -166,7 +166,7 @@ def pull_from_gsheet(
         local_repo.replace_month_data(month, month_data)
 
 
-################
+###################
 ### TRAIN AND GUESS
 
 
