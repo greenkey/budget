@@ -64,6 +64,35 @@ class LedgerItemRepo:
     def __init__(self, db: Connection):
         self.db = db
 
+    def filter(self, **kwargs) -> Iterable[models.LedgerItem]:
+        """
+        Get all the items that match the given filters
+        """
+        filters = ["1=1"]
+        query_params = {}
+        for key, value in kwargs.items():
+            field__operator = key.split("__")
+            if len(field__operator) == 1:
+                field = key
+                operator = "eq"
+            else:
+                field, operator = field__operator
+            query_params[field] = value
+            if operator == "eq":
+                filters.append(f"{field} = :{field}")
+            elif operator == "gte":
+                filters.append(f"{field} >= :{field}")
+        query = "SELECT * FROM ledger_items WHERE " + " AND ".join(filters)
+
+        cursor = self.db.execute(query, query_params)
+
+        columns = [column[0] for column in cursor.description]
+        for row in cursor.fetchall():
+            # create dict
+            row = dict(zip(columns, row))
+            # convert dictionaries to LedgerItem objects
+            yield models.LedgerItem(**row)
+
     def insert(
         self,
         ledger_items: Iterable[models.LedgerItem],
