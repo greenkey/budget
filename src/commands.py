@@ -11,16 +11,14 @@ logger = logging.getLogger(__name__)
 
 
 class Commands:
-    def import_files(self, folder: Optional[str] = None, **kwargs):
+    def import_files(self, folder: str | None = None, **kwargs):
         """
         Search for all the files contained in the data folder, for each try all the Importers until one works, then store the data in the database
         """
         logger.info("Importing files")
-        folder_path = Path(folder) if folder else config.DATA_FOLDER
+        folder_path = Path(folder) if folder else config.IMPORT_FOLDER
         # get all the files in the data folder
-        files = [
-            file for file in folder_path.iterdir() if file.is_file() and file != config.DB_PATH
-        ]
+        files = [file for file in folder_path.iterdir() if file.is_file()]
         application.import_files(
             files=files,
             months=calculate_months(**kwargs),
