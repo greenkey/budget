@@ -11,6 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 class Commands:
+
+    ############
+    ### GET DATA
+
     def import_files(self, folder: str | None = None, **kwargs):
         """
         Search for all the files contained in the data folder, for each try all the Importers until one works, then store the data in the database
@@ -42,9 +46,8 @@ class Commands:
         self.import_files(month=month)
         self.download(month=month)
 
-    def migrate_local_db(self):
-        with sqlite.db_context(config.DB_PATH) as db:
-            migrations.migrate(db)
+    ################
+    ### GOOGLE SHEET
 
     def setup_gsheet(self, force: bool = False):
         """
@@ -70,6 +73,9 @@ class Commands:
             months=calculate_months(**kwargs),
         )
 
+    #########
+    ### UTILS
+
     def chain(self, *commands: list[str]):
         """
         Run a chain of commands
@@ -77,6 +83,20 @@ class Commands:
         for command in commands:
             fun = getattr(self, command)
             fun()
+
+    def review(self, month: str):
+        """
+        Review the transactions for a given month
+        """
+        logger.info(f"Reviewing transactions for month {month}")
+        self.pull(month=month)
+        self.fetch(month=month)
+        self.train()
+        self.guess(month=month)
+        self.push(month=month)
+
+    ###################
+    ### TRAIN AND GUESS
 
     def train(self, classifiers: list[str] | None = None):
         """
@@ -95,17 +115,6 @@ class Commands:
             months=calculate_months(**kwargs),
             to_sync_only=to_sync_only,
         )
-
-    def review(self, month: str):
-        """
-        Review the transactions for a given month
-        """
-        logger.info(f"Reviewing transactions for month {month}")
-        self.pull(month=month)
-        self.fetch(month=month)
-        self.train()
-        self.guess(month=month)
-        self.push(month=month)
 
 
 def calculate_months(**kwargs):
