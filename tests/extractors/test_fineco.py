@@ -1,6 +1,8 @@
 from datetime import date, datetime
 from decimal import Decimal
 
+import pytest
+
 from src import extractors, models
 
 fineco_test_data = """
@@ -24,6 +26,7 @@ def test_fineco_importer():
     assert sorted(ledger_items) == sorted(
         [
             models.LedgerItem(
+                tx_id="c7dcb98f37336e2982e3b8194ffe13d9dfce85e2",
                 tx_date=date(2023, 1, 29),
                 tx_datetime=datetime(2023, 1, 29, 0, 0),
                 amount=Decimal("-3.00"),
@@ -33,6 +36,7 @@ def test_fineco_importer():
                 ledger_item_type=models.LedgerItemType.EXPENSE,
             ),
             models.LedgerItem(
+                tx_id="ad45415bda111fa13b8e80fc9944cf2bd70414ef",
                 tx_date=date(2023, 1, 5),
                 tx_datetime=datetime(2023, 1, 5, 0, 0),
                 amount=Decimal("3.95"),

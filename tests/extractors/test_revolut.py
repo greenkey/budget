@@ -19,6 +19,7 @@ def test_revolut_importer():
     assert sorted(ledger_items) == sorted(
         [
             models.LedgerItem(
+                tx_id="0f0892d6917c5834cb713dab0eeda47136525bb5",
                 tx_date=date(2021, 12, 9),
                 tx_datetime=datetime(2021, 12, 9, 1, 47, 29),
                 amount=Decimal("-23.98"),
@@ -28,6 +29,7 @@ def test_revolut_importer():
                 ledger_item_type=models.LedgerItemType.EXPENSE,
             ),
             models.LedgerItem(
+                tx_id="f3854d7247ef2d6d943efa6215c77c7d735960dd",
                 tx_date=date(2021, 12, 8),
                 tx_datetime=datetime(2021, 12, 8, 8, 56, 27),
                 amount=Decimal("-20"),
@@ -37,6 +39,7 @@ def test_revolut_importer():
                 ledger_item_type=models.LedgerItemType.EXPENSE,
             ),
             models.LedgerItem(
+                tx_id="521bcfbe9936bbf43de17d15d5b36615edc2ac54",
                 tx_date=date(2021, 12, 10),
                 tx_datetime=datetime(2021, 12, 10, 8, 29, 30),
                 amount=Decimal("85.42"),

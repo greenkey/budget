@@ -47,7 +47,12 @@ class RevolutImporter(base.ExcelImporter):
             else:
                 ledger_item_type = models.LedgerItemType.EXPENSE
 
+            tx_id = models.calculate_unique_id(
+                f"{tx_datetime.strftime('%Y%m%d%H%M%S')}:{item['Balance']}"
+            )
+
             ledger_item = models.LedgerItem(
+                tx_id=tx_id,
                 tx_date=tx_datetime.date(),
                 tx_datetime=tx_datetime,
                 amount=item["Amount"],

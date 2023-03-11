@@ -12,20 +12,13 @@ class LedgerItemType(Enum):
     INCOME = "income"
 
 
-def _calculate_tx_id(obj) -> str:
-    s = "|".join(
-        [
-            obj.account,
-            obj.tx_datetime.strftime("%Y-%m-%d %H:%M:%S"),
-            f"{obj.amount:.2f}",
-            obj.description,
-        ]
-    )
-    return hashlib.sha1(s.encode("utf-8")).hexdigest()
+def calculate_unique_id(string) -> str:
+    return hashlib.sha1(string.encode("utf-8")).hexdigest()
 
 
 @dataclasses.dataclass
 class LedgerItem:
+    tx_id: str
     tx_date: date
     tx_datetime: datetime  # it's the time in which the transaction wasfirst registered
     amount: Decimal
@@ -34,7 +27,6 @@ class LedgerItem:
     account: str
     ledger_item_type: LedgerItemType  # enum containing TRANSFER, EXPENSE, INCOME
     amount_eur: Decimal | None = None
-    tx_id: str | None = None
     event_name: str | None = None
     counterparty: str | None = None
     category: str | None = None
@@ -55,8 +47,6 @@ class LedgerItem:
                 self.amount = Decimal(self.amount.replace("€", "").replace(",", ""))
         if not isinstance(self.ledger_item_type, LedgerItemType):
             self.ledger_item_type = LedgerItemType(self.ledger_item_type)
-        if not self.tx_id:
-            self.tx_id = _calculate_tx_id(self)
 
     @classmethod
     def get_field_names(cls) -> list[str]:

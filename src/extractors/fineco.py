@@ -1,6 +1,9 @@
 import re
+from collections import defaultdict
 from datetime import datetime
 from decimal import Decimal
+from itertools import count
+from pathlib import Path
 from typing import Generator
 
 import openpyxl
@@ -23,10 +26,29 @@ class FinecoImporter(base.ExcelImporter):
         "Moneymap",
     ]
 
+    def __init__(self, file_path: str | Path):
+        super().__init__(file_path)
+        self.dates_counter = defaultdict(count)
+
+    def _calculate_tx_id(self, item: dict) -> str:
+        # assume the transactions are always in the same order within the date
+        num = next(self.dates_counter[item["Data"]])
+        return models.calculate_unique_id(f'{item["Data"]}:{num}')
+
     def get_ledger_items(self) -> Generator[models.LedgerItem, None, None]:
+        # the two lines below are used to calculate the unique id for each transaction
+        tx_num_for_day = 0
+        latest_tx_date = None
+
         for item in self.get_records_from_file():
             # convert the date from a string like '29/01/2023' to a date object
             tx_date = datetime.strptime(item["Data"], "%d/%m/%Y").date()
+
+            if latest_tx_date == tx_date:
+                tx_num_for_day += 1
+            else:
+                tx_num_for_day = 0
+                latest_tx_date = tx_date
 
             if item["Entrate"]:
                 amount = Decimal(item["Entrate"])
@@ -57,6 +79,7 @@ class FinecoImporter(base.ExcelImporter):
 
             if description.startswith("ESTRATTO CONTO"):
                 yield models.LedgerItem(
+                    tx_id=self._calculate_tx_id(item),
                     tx_date=tx_date,
                     tx_datetime=datetime.combine(tx_date, datetime.min.time()),
                     amount=-amount,
@@ -69,6 +92,7 @@ class FinecoImporter(base.ExcelImporter):
                 ledger_item_type = models.LedgerItemType.TRANSFER
 
             yield models.LedgerItem(
+                tx_id=self._calculate_tx_id(item),
                 tx_date=tx_date,
                 tx_datetime=datetime.combine(tx_date, datetime.min.time()),
                 amount=amount,
