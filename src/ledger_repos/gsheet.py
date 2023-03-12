@@ -220,7 +220,7 @@ def sheet(fun: Callable) -> Callable:
     return wrapper
 
 
-class LedgerItemRepo:
+class LedgerItemMonthlyRepo:
     def __init__(self, sheet_connection: SheetConnection, header: list[str]):
         self.sheet_connection = sheet_connection
         self.header = header

@@ -128,7 +128,7 @@ def push_to_gsheet(
     *, db: sqlite.Connection, sheet: gsheet.SheetConnection, months: list[str] | None = None
 ):
     local_repo = sqlite.LedgerItemRepo(db)
-    remote_repo = gsheet.LedgerItemRepo(sheet, models.LedgerItem.get_field_names())
+    remote_repo = gsheet.LedgerItemMonthlyRepo(sheet, models.LedgerItem.get_field_names())
 
     for month in months:
         logger.info(f"Pushing month {month}")
@@ -149,7 +149,7 @@ def pull_from_gsheet(
     *, db: sqlite.Connection, sheet: gsheet.SheetConnection, months: list[str] | None = None
 ):
     local_repo = sqlite.LedgerItemRepo(db)
-    remote_repo = gsheet.LedgerItemRepo(
+    remote_repo = gsheet.LedgerItemMonthlyRepo(
         sheet_connection=sheet, header=models.LedgerItem.get_field_names()
     )
 
