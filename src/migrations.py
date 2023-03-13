@@ -18,6 +18,17 @@ migrations = {
     2: """alter table ledger_items add column event_name TEXT""",
     3: """alter table ledger_items add column to_sync INTEGER""",
     4: """alter table ledger_items add column amount_eur TEXT""",
+    5: """CREATE TABLE augmented_data (
+            tx_id TEXT UNIQUE PRIMARY KEY,
+            amount_eur TEXT,
+            counterparty TEXT,
+            category TEXT,
+            sub_category TEXT,
+            event_name TEXT
+        )""",
+    6: """INSERT INTO augmented_data (tx_id, amount_eur, counterparty, category, sub_category, event_name)
+          SELECT tx_id, amount_eur, counterparty, category, labels, event_name
+          FROM ledger_items """,
 }
 
 
