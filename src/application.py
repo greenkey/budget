@@ -21,7 +21,7 @@ class ExtractorNotFoundError(ValueError):
     pass
 
 
-def import_files(*, files: list[Path], months: list[str] | None = None):
+def import_files(*, files: list[Path]):
     """
     Search for all the files contained in the data folder, for each try all the Importers until one works, then store the data in the database
     """
@@ -40,10 +40,6 @@ def import_files(*, files: list[Path], months: list[str] | None = None):
             logger.error(f"Unable to import file {file}")
 
         if ledger_items:
-            if months:
-                ledger_items = [
-                    item for item in ledger_items if item.tx_date.strftime("%Y-%m") in months
-                ]
             store(items=ledger_items, duplicate_strategy=sqlite.DuplicateStrategy.SKIP)
 
 
@@ -59,7 +55,7 @@ def download(*, months: list[str] | None = None):
     """
     Download the transactions for a given month
     """
-    logger.info(f"Downloading transactions for {months}")
+    logger.debug(f"Downloading transactions for {months}")
     for downloader_class in extractors.get_downloaders():
         client = downloader_class()
 
@@ -125,45 +121,25 @@ def _set_amount_eur(items: Iterable[models.LedgerItem]) -> Iterable[models.Ledge
 @gsheet.sheet
 @sqlite.db
 def push_to_gsheet(
-    *, db: sqlite.Connection, sheet: gsheet.SheetConnection, months: list[str] | None = None
+    *, db: sqlite.Connection, sheet: gsheet.SheetConnection, since_date: datetime.date
 ):
     local_repo = sqlite.LedgerItemRepo(db)
-    remote_repo = gsheet.LedgerItemMonthlyRepo(sheet, models.LedgerItem.get_field_names())
+    remote_repo = gsheet.LedgerItemRepo(sheet)
 
-    for month in months:
-        logger.info(f"Pushing month {month}")
-        month_data = local_repo.get_month_data(month)
-        remote_repo.replace_month_data(month, month_data)
-
-    if not months:
-        logger.info("Pushing all changed data")
-        for month, data in local_repo.get_updated_data_by_month():
-            logger.info(f"Pushing month {month}")
-            remote_repo.update_month_data(month, data)
-            local_repo.mark_month_as_synced(month)
+    data = local_repo.filter(tx_date__gte=since_date)
+    remote_repo.clear()
+    remote_repo.insert(data)
 
 
 @gsheet.sheet
 @sqlite.db
-def pull_from_gsheet(
-    *, db: sqlite.Connection, sheet: gsheet.SheetConnection, months: list[str] | None = None
-):
+def pull_from_gsheet(*, db: sqlite.Connection, sheet: gsheet.SheetConnection):
     local_repo = sqlite.LedgerItemRepo(db)
-    remote_repo = gsheet.LedgerItemMonthlyRepo(
-        sheet_connection=sheet, header=models.LedgerItem.get_field_names()
-    )
+    remote_repo = gsheet.LedgerItemRepo(sheet_connection=sheet)
 
-    if not months:
-        # get last three months
-        day = datetime.date.today()
-        while len(months) < 3:
-            months.append(day.strftime("%Y-%m"))
-            day = day.replace(day=1) - datetime.timedelta(days=1)
-
-    for month in months:
-        month_data = remote_repo.get_month_data(month)
-        month_data = _set_amount_eur(month_data)
-        local_repo.replace_month_data(month, month_data)
+    data = remote_repo.get_data()
+    data = _set_amount_eur(data)  # TODO: move this after the insertion, as "augmentation"
+    local_repo.insert(data, duplicate_strategy=sqlite.DuplicateStrategy.REPLACE)
 
 
 ###################

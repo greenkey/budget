@@ -46,7 +46,10 @@ class LedgerItem:
             if isinstance(self.amount, str):
                 self.amount = Decimal(self.amount.replace("€", "").replace(",", ""))
         if not isinstance(self.ledger_item_type, LedgerItemType):
-            self.ledger_item_type = LedgerItemType(self.ledger_item_type)
+            try:
+                self.ledger_item_type = LedgerItemType(self.ledger_item_type)
+            except ValueError:
+                pass
 
     @classmethod
     def get_field_names(cls) -> list[str]:
