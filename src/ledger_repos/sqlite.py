@@ -1,4 +1,6 @@
+import csv
 import enum
+from io import StringIO
 import logging
 import sqlite3
 from contextlib import contextmanager
@@ -182,3 +184,15 @@ class LedgerItemRepo:
             """,
             models.asdict(ledger_item),
         )
+
+    def dump(self, table_name: str) -> StringIO:
+        """Return a StringIO with the contents of the given table in CSV format"""
+        cursor = self.db.execute(f"SELECT * FROM {table_name}")
+        columns = [column[0] for column in cursor.description]
+        csv_file = StringIO()
+        writer = csv.DictWriter(csv_file, fieldnames=columns)
+        writer.writeheader()
+        for row in cursor:
+            writer.writerow(dict(zip(columns, row)))
+        csv_file.seek(0)
+        return csv_file
