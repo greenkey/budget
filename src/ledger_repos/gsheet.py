@@ -16,7 +16,6 @@ from googleapiclient.errors import HttpError
 
 import config
 from src import models
-from src.ledger_repos import gsheet
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = [
@@ -78,8 +77,7 @@ if __name__ == "__main__":
     main()
 
 
-def _range(month: str, range: str | None = None) -> str:
-    sheet_name = f"ledger {month}"
+def _range(sheet_name: str, range: str | None = None) -> str:
     if range:
         return f"'{sheet_name}'!{range}"
     else:
@@ -220,50 +218,10 @@ def sheet(fun: Callable) -> Callable:
     return wrapper
 
 
-class LedgerItemMonthlyRepo:
-    def __init__(self, sheet_connection: SheetConnection, header: list[str]):
+class GSheetRepo:
+    def __init__(self, sheet_connection: SheetConnection):
         self.sheet_connection = sheet_connection
-        self.header = header
-
-    def _set_header(self, month: str):
-        self.sheet_connection.update(_range(month, "1:1"), [self.header])
-
-    @cache
-    def get_months(self) -> list[str]:
-        sheet_titles = self.sheet_connection.get_sheet_titles()
-        months = list()
-        for sheet_title in sheet_titles:
-            if sheet_title.startswith("ledger "):
-                months.append(sheet_title.split(" ")[1])
-        return sorted(months)
-
-    def _clear_month(self, month: str):
-        if month not in self.get_months():
-            self._create_month_sheet(month)
-        self._set_header(month)
-        self.sheet_connection.clear(_range(month, "2:9999"))
-
-    def _create_month_sheet(self, month: str):
-        body = {"requests": {"addSheet": {"properties": {"title": _range(month)}}}}
-        self.sheet_connection.sheet.batchUpdate(
-            spreadsheetId=self.sheet_connection.sheet_id, body=body
-        ).execute()
-
-    def replace_month_data(self, month: str, ledger_items: Iterable[models.LedgerItem]):
-        self._clear_month(month)
-
-        dict_items = [models.asdict(item) for item in ledger_items]
-        values = [[item.get(f, None) for f in self.header] for item in dict_items]
-
-        self.sheet_connection.update(_range(month, f"2:{1+len(values)}"), values)
-
-    def update_month_data(self, month: str, ledger_items: Iterable[models.LedgerItem]):
-        existing_data = {item.tx_id: item for item in self.get_month_data(month)}
-
-        for item in ledger_items:
-            existing_data[item.tx_id] = item
-
-        self.replace_month_data(month, existing_data.values())
+        self.header = models.LedgerItem.get_field_names()
 
     def _parse_datetime(self, value: str) -> datetime:
         try:
@@ -277,14 +235,53 @@ class LedgerItemMonthlyRepo:
         except ValueError:
             return value
 
-    def get_month_data(self, month: str) -> Iterable[models.LedgerItem]:
-        values = self.sheet_connection.get(_range(month, "2:9999"))
-        if not values:
-            return
+
+class LedgerItemRepo(GSheetRepo):
+    ledger_sheet = "ledger"
+
+    def __init__(self, sheet_connection: SheetConnection):
+        super().__init__(sheet_connection)
+        self.header = [
+            "tx_id",
+            "tx_datetime",
+            "tx_date",
+            "tx_month",
+            "account",
+            "amount",
+            "currency",
+            "amount_eur",
+            "ledger_item_type",
+            "description",
+            "event_name",
+            "counterparty",
+            "category",
+            "labels",
+        ]
+
+    def clear(self):
+        self.sheet_connection.update(_range(self.ledger_sheet, "1:1"), [self.header])
+        self.sheet_connection.clear(_range(self.ledger_sheet, "2:9999"))
+
+    def insert(self, ledger_items: Iterable[models.LedgerItem]):
+        dict_items = [self._item_to_dict(item) for item in ledger_items]
+        values = [[item.get(f, None) for f in self.header] for item in dict_items]
+
+        self.sheet_connection.update(_range(self.ledger_sheet, f"2:{1+len(values)}"), values)
+
+    def _item_to_dict(self, item: models.LedgerItem) -> dict:
+        data_dict = models.asdict(item)
+        data_dict["tx_month"] = item.tx_datetime.strftime("%Y-%m")
+        return data_dict
+
+    def get_data(self) -> Iterable[models.LedgerItem]:
+        [header] = self.sheet_connection.get(_range(self.ledger_sheet, "1:1"))
+        values = self.sheet_connection.get(_range(self.ledger_sheet, "2:9999"))
         for row in values:
-            dict_data = dict(zip(self.header, row))
+            dict_data = dict(zip(header, row))
+            dict_data = {
+                k: v for k, v in dict_data.items() if k in models.LedgerItem.get_field_names()
+            }
             # convert dates to datetime
             dict_data["tx_date"] = self._parse_datetime(dict_data["tx_date"]).date()
             dict_data["tx_datetime"] = self._parse_datetime(dict_data["tx_datetime"])
-            dict_data["to_sync"] = False
             yield models.LedgerItem(**dict_data)

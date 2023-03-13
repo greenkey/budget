@@ -1,11 +1,10 @@
 import datetime
 import logging
 from pathlib import Path
-from typing import Optional
 
 import config
-from src import application, migrations
-from src.ledger_repos import gsheet, sqlite
+from src import application
+from src.ledger_repos import gsheet
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +14,7 @@ class Commands:
     ############
     ### GET DATA
 
-    def import_files(self, folder: str | None = None, **kwargs):
+    def import_files(self, folder: str | None = None):
         """
         Search for all the files contained in the data folder, for each try all the Importers until one works, then store the data in the database
         """
@@ -23,10 +22,7 @@ class Commands:
         folder_path = Path(folder) if folder else config.IMPORT_FOLDER
         # get all the files in the data folder
         files = [file for file in folder_path.iterdir() if file.is_file()]
-        application.import_files(
-            files=files,
-            months=calculate_months(**kwargs),
-        )
+        application.import_files(files=files)
 
     def download(self, **kwargs):
         """
@@ -38,13 +34,14 @@ class Commands:
             months=months,
         )
 
-    def fetch(self, month: str):
+    def fetch(self, **kwargs):
         """
         Run import and download
         """
-        logger.info(f"Fetching transactions for month {month}")
-        self.import_files(month=month)
-        self.download(month=month)
+        logger.info("Fetching transactions")
+        self.import_files()
+        for month in calculate_months(**kwargs) or calculate_months(last_year=True):
+            self.download(month=month)
 
     ################
     ### GOOGLE SHEET
@@ -55,23 +52,24 @@ class Commands:
         """
         gsheet.main(force=force)
 
-    def push(self, **kwargs):
+    def push(self, since: str | None = None, **kwargs):
         """
         Pushes data to Google Sheet
         """
         logger.info("Pushing data to google sheet")
-        application.push_to_gsheet(
-            months=calculate_months(**kwargs),
-        )
+        if since:
+            since_date = datetime.date.fromisoformat(since)
+        else:
+            since_date = datetime.date.today() - datetime.timedelta(days=365)
+
+        application.push_to_gsheet(since_date=since_date)
 
     def pull(self, **kwargs):
         """
         Pulls data from Google Sheet
         """
         logger.info("Pulling data from google sheet")
-        application.pull_from_gsheet(
-            months=calculate_months(**kwargs),
-        )
+        application.pull_from_gsheet()
 
     #########
     ### UTILS
@@ -84,16 +82,16 @@ class Commands:
             fun = getattr(self, command)
             fun()
 
-    def review(self, month: str):
+    def review(self, **kwargs):
         """
         Review the transactions for a given month
         """
-        logger.info(f"Reviewing transactions for month {month}")
-        self.pull(month=month)
-        self.fetch(month=month)
+        logger.info("Reviewing transactions")
+        self.pull()
+        self.fetch(**kwargs)
         self.train()
-        self.guess(month=month)
-        self.push(month=month)
+        self.guess(**kwargs)
+        self.push()
 
     ###################
     ### TRAIN AND GUESS
@@ -122,6 +120,12 @@ def calculate_months(**kwargs):
         return [month]
 
     months = set()
+
+    if kwargs.get("last_year"):
+        day = datetime.date.today()
+        for _ in range(12):
+            months.add(day.strftime("%Y-%m"))
+            day = day.replace(day=1) - datetime.timedelta(days=1)
 
     if backwards := kwargs.get("previous_months"):
         day = datetime.date.today()
