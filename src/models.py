@@ -75,6 +75,16 @@ class LedgerItem:
         return field_names
 
 
+@dataclasses.dataclass
+class AgumentedData:
+    tx_id: str
+    amount_eur: Decimal | None = None
+    counterparty: str | None = None
+    category: str | None = None
+    sub_category: str | None = None
+    event_name: str | None = None
+
+
 def asdict(item: Any) -> dict[str, Any]:
     """
     Convert a dataclass to a dict, converting Decimal and Enum to str and int respectively
