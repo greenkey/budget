@@ -1,5 +1,6 @@
 import datetime
 import logging
+import shutil
 from decimal import Decimal
 from pathlib import Path
 from typing import Iterable
@@ -112,6 +113,23 @@ def _set_amount_eur(items: Iterable[models.LedgerItem]) -> Iterable[models.Ledge
                 Decimal(str(item.amount)), item.currency, "EUR", date=item.tx_date
             )
         yield item
+
+
+@sqlite.db
+def dump(*, db: sqlite.Connection):
+    """
+    Dump the database to a csv file
+    """
+    repo = sqlite.LedgerItemRepo(db)
+
+    tables_to_dump = ["ledger_items", "augmented_data"]
+
+    for table in tables_to_dump:
+        file_name = config.DATA_FOLDER / f"{table}.csv"
+        data_buffer = repo.dump(table)
+        with open(file_name, "w") as fd:
+            data_buffer.seek(0)
+            shutil.copyfileobj(data_buffer, fd)
 
 
 ################

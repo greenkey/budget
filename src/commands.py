@@ -93,6 +93,13 @@ class Commands:
         self.guess(**kwargs)
         self.push()
 
+    def dump(self, **kwargs):
+        """
+        Dump the database to a csv file
+        """
+        logger.info("Dumping data")
+        application.dump()
+
     ###################
     ### TRAIN AND GUESS
 
