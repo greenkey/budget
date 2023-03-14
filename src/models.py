@@ -17,7 +17,35 @@ def calculate_unique_id(string) -> str:
 
 
 @dataclasses.dataclass
-class LedgerItem:
+class ModelMixin:
+    @classmethod
+    def get_field_names(cls) -> list[str]:
+        return [field.name for field in dataclasses.fields(cls)]
+
+
+@dataclasses.dataclass
+class AugmentedData(ModelMixin):
+    tx_id: str
+    amount_eur: Decimal | None = None
+    counterparty: str | None = None
+    category: str | None = None
+    sub_category: str | None = None
+    event_name: str | None = None
+
+    def __bool__(self):
+        return any(
+            [
+                self.amount_eur is not None,
+                self.counterparty,
+                self.category,
+                self.sub_category,
+                self.event_name,
+            ]
+        )
+
+
+@dataclasses.dataclass
+class LedgerItem(ModelMixin):
     tx_id: str
     tx_date: date
     tx_datetime: datetime  # it's the time in which the transaction wasfirst registered
@@ -26,6 +54,7 @@ class LedgerItem:
     description: str
     account: str
     ledger_item_type: LedgerItemType  # enum containing TRANSFER, EXPENSE, INCOME
+    augmented_data: AugmentedData | None = None
 
     def __lt__(self, other: "LedgerItem") -> bool:
         # implement a check against hash to avoid duplicates
@@ -44,36 +73,6 @@ class LedgerItem:
                 self.ledger_item_type = LedgerItemType(self.ledger_item_type)
             except ValueError:
                 pass
-
-    @classmethod
-    def get_field_names(cls) -> list[str]:
-        # TODO make this simpler
-        # returning a list to preserve the order
-        field_names = [
-            "tx_id",
-            "tx_date",
-            "tx_datetime",
-            "amount",
-            "currency",
-            "description",
-            "account",
-            "ledger_item_type",
-        ]
-        # add the missing ones
-        for f in dataclasses.fields(cls):
-            if f.name not in field_names:
-                field_names.append(f.name)
-        return field_names
-
-
-@dataclasses.dataclass
-class AgumentedData:
-    tx_id: str
-    amount_eur: Decimal | None = None
-    counterparty: str | None = None
-    category: str | None = None
-    sub_category: str | None = None
-    event_name: str | None = None
 
 
 def asdict(item: Any) -> dict[str, Any]:
