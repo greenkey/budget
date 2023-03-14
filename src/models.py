@@ -22,6 +22,27 @@ class ModelMixin:
     def get_field_names(cls) -> list[str]:
         return [field.name for field in dataclasses.fields(cls)]
 
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "ModelMixin":
+        args = {}
+        for field in dataclasses.fields(cls):
+            value = data.get(field.name)
+            if field.type == type(value):
+                args[field.name] = value
+            elif isinstance(value, str):
+                if field.type == Decimal:
+                    args[field.name] = Decimal(value.replace("€", "").replace(",", ""))
+                elif field.type == datetime:
+                    args[field.name] = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+                # elif issubclass(field.type, Enum):
+                #     args[field.name] = field.type(value)
+                else:
+                    args[field.name] = value
+            else:
+                args[field.name] = value
+
+        return cls(**args)
+
 
 @dataclasses.dataclass
 class AugmentedData(ModelMixin):
@@ -72,10 +93,10 @@ class LedgerItem(ModelMixin):
             try:
                 self.ledger_item_type = LedgerItemType(self.ledger_item_type)
             except ValueError:
-                pass
+                self.ledger_item_type = None
 
 
-def asdict(item: Any) -> dict[str, Any]:
+def asdict(item: Any, flat: bool = False) -> dict[str, Any]:
     """
     Convert a dataclass to a dict, converting Decimal and Enum to str and int respectively
     """
@@ -91,7 +112,19 @@ def asdict(item: Any) -> dict[str, Any]:
         elif isinstance(v, date):
             result[k] = v.isoformat()
         elif isinstance(v, ModelMixin):
-            result[k] = asdict(v)  # type: ignore
+            v = asdict(v)
+            if flat:
+                result.update(v)
+            else:
+                result[k] = v
         else:
             result[k] = v
     return result
+
+
+def deserialize(dict_data: dict[str, Any]) -> LedgerItem:
+    ledger_item = LedgerItem.from_dict(dict_data)
+    if agumented_data := AugmentedData.from_dict(dict_data):
+        ledger_item.augmented_data = agumented_data  # type: ignore
+
+    return ledger_item  # type: ignore

@@ -38,7 +38,7 @@ def import_files(*, files: list[Path]):
             logger.error(f"Unable to import file {file}")
 
         if ledger_items:
-            store(items=ledger_items, duplicate_strategy=sqlite.DuplicateStrategy.SKIP)
+            store(items=ledger_items)
 
 
 def _import_file(file_path: Path, importer_class: type[extractors.Importer]):
@@ -61,7 +61,7 @@ def download(*, months: list[str]):
             *[client.get_ledger_items(month) for month in months]
         )
 
-        store(items=ledger_items, duplicate_strategy=sqlite.DuplicateStrategy.SKIP)
+        store(items=ledger_items)
 
 
 ##############
@@ -144,7 +144,7 @@ def push_to_gsheet(
     local_repo = sqlite.LedgerItemRepo(db)
     remote_repo = gsheet.LedgerItemRepo(sheet)
 
-    data = local_repo.filter(tx_date__gte=since_date)
+    data = list(local_repo.filter(tx_date__gte=since_date))
     remote_repo.clear()
     remote_repo.insert(data)
 
@@ -152,13 +152,13 @@ def push_to_gsheet(
 @gsheet.sheet
 @sqlite.db
 def pull_from_gsheet(*, db: sqlite.Connection, sheet: gsheet.SheetConnection):
-    sqlite.LedgerItemRepo(db)
+    local_repo = sqlite.LedgerItemRepo(db)
     remote_repo = gsheet.LedgerItemRepo(sheet_connection=sheet)
 
-    # TODO: review
-    # data = remote_repo.get_data()
-    # new_data = _set_amount_eur(data)
-    # local_repo.set_augmented_data(new_data)
+    data = list(remote_repo.get_data())
+    local_repo.set_augmented_data(
+        [item.augmented_data for item in data if item.augmented_data]
+    )
 
 
 ###################

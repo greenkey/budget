@@ -109,24 +109,7 @@ class LedgerItemRepo:
         for row in cursor.fetchall():
             # create dict
             row = dict(zip(columns, row))
-            # convert dictionaries to LedgerItem objects
-            ledger_item = models.LedgerItem(
-                **{
-                    k: v
-                    for k, v in row.items()
-                    if k in models.LedgerItem.get_field_names()
-                }
-            )
-            if agumented_data := models.AugmentedData(
-                **{
-                    k: v
-                    for k, v in row.items()
-                    if k in models.AugmentedData.get_field_names()
-                }
-            ):
-                ledger_item.augmented_data = agumented_data
-
-            yield ledger_item
+            yield models.deserialize(row)
 
     def insert(
         self,

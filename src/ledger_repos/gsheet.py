@@ -115,7 +115,7 @@ class SheetConnection:
 
     def _update(self, queue):
         batch_update_values_request_body = {
-            "value_input_option": "USER_ENTERED",
+            "value_input_option": "RAW",
             "data": [{"range": op.range, "values": op.values} for op in queue],
         }
 
@@ -134,7 +134,7 @@ class SheetConnection:
             request = self.sheet.values().append(
                 spreadsheetId=self.sheet_id,
                 range=op.range,
-                valueInputOption="USER_ENTERED",
+                valueInputOption="RAW",
                 insertDataOption="INSERT_ROWS",
                 body={"values": op.values},
             )
@@ -262,11 +262,11 @@ class LedgerItemRepo(GSheetRepo):
             "amount_eur",
             "ledger_item_type",
             "description",
+            "category",
+            "sub_category",
             "event_name",
             "counterparty",
-            "category",
-            "labels",
-        ]
+        ] + [""] * 10
 
     def clear(self):
         self.sheet_connection.update(_range(self.ledger_sheet, "1:1"), [self.header])
@@ -281,7 +281,7 @@ class LedgerItemRepo(GSheetRepo):
         )
 
     def _item_to_dict(self, item: models.LedgerItem) -> dict:
-        data_dict = models.asdict(item)
+        data_dict = models.asdict(item, flat=True)
         data_dict["tx_month"] = item.tx_datetime.strftime("%Y-%m")
         return data_dict
 
@@ -290,12 +290,12 @@ class LedgerItemRepo(GSheetRepo):
         values = self.sheet_connection.get(_range(self.ledger_sheet, "2:9999"))
         for row in values:
             dict_data = dict(zip(header, row))
-            dict_data = {
-                k: v
-                for k, v in dict_data.items()
-                if k in models.LedgerItem.get_field_names()
-            }
+            # dict_data = {
+            #     k: v
+            #     for k, v in dict_data.items()
+            #     if k in models.LedgerItem.get_field_names()
+            # }
             # convert dates to datetime
             dict_data["tx_date"] = self._parse_datetime(dict_data["tx_date"]).date()  # type: ignore
             dict_data["tx_datetime"] = self._parse_datetime(dict_data["tx_datetime"])
-            yield models.LedgerItem(**dict_data)
+            yield models.deserialize(dict_data)
