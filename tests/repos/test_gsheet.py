@@ -1,9 +1,10 @@
-from unittest.mock import call, patch
+from unittest.mock import MagicMock, call, patch
 
 from src.ledger_repos.gsheet import SheetConnection
 
 
 @patch.object(SheetConnection, "sheet")
+@patch.object(SheetConnection, "_throttle", new=MagicMock())
 def test_commit_updates(sheet_mock):
     conn = SheetConnection("fake_shee_id")
 
@@ -24,6 +25,7 @@ def test_commit_updates(sheet_mock):
 
 
 @patch.object(SheetConnection, "sheet")
+@patch.object(SheetConnection, "_throttle", new=MagicMock())
 def test_commit_updates_and_clears(sheet_mock):
     conn = SheetConnection("fake_shee_id")
 
