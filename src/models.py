@@ -90,6 +90,8 @@ def asdict(item: Any) -> dict[str, Any]:
             result[k] = v.strftime("%Y-%m-%d %H:%M:%S")
         elif isinstance(v, date):
             result[k] = v.isoformat()
+        elif isinstance(v, ModelMixin):
+            result[k] = asdict(v)  # type: ignore
         else:
             result[k] = v
     return result
