@@ -106,10 +106,10 @@ class LedgerItemRepo:
         ledger_items: Iterable[models.LedgerItem],
     ):
         field_names = models.LedgerItem.get_field_names()
+        field_names.remove("augmented_data")
         fields = ", ".join(field_names)
         placeholders = ", ".join(f":{field}" for field in field_names)
 
-        # if we are skipping duplicates, it means we are in import phase, we want to sync them
         ledger_items = list(ledger_items)
 
         result = self.db.executemany(
@@ -118,7 +118,22 @@ class LedgerItemRepo:
             """,
             [models.asdict(ledger_item) for ledger_item in ledger_items],
         )
-        logger.debug(f"Inserted {result.rowcount} rows")
+        logger.debug(f"Inserted {result.rowcount} ledger items")
+
+    def set_augmented_data(self, augmented_data: Iterable[models.AugmentedData]):
+        field_names = models.AugmentedData.get_field_names()
+        fields = ", ".join(field_names)
+        placeholders = ", ".join(f":{field}" for field in field_names)
+
+        augmented_data = list(augmented_data)
+
+        result = self.db.executemany(
+            f"""
+            INSERT OR REPLACE INTO augmented_data ({fields}) VALUES ({placeholders})
+            """,
+            [models.asdict(item) for item in augmented_data],
+        )
+        logger.debug(f"Inserted {result.rowcount} augmented data items")
 
     def get_month_data(
         self, month: str, only_to_sync: bool = False
