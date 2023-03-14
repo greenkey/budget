@@ -72,27 +72,19 @@ def download(*, months: list[str]):
 def store(
     *,
     db: sqlite.Connection,
-    items: Iterable[models.LedgerItem],
-    duplicate_strategy: sqlite.DuplicateStrategy | None = None,
+    items: list[models.LedgerItem],
 ):
     """
     Store the transactions in the main database
     """
     repo = sqlite.LedgerItemRepo(db)
-    duplicate_strategy = duplicate_strategy or sqlite.DuplicateStrategy.RAISE
-
-    # process items to add EUR amount
-    items = _set_amount_eur(items)
-
-    # TODO: process items with classifiers
-
-    repo.insert(
-        items,
-        duplicate_strategy=duplicate_strategy,
-    )
+    repo.insert(items)
+    repo.set_augmented_data(_set_amount_eur(items))
 
 
-def _set_amount_eur(items: Iterable[models.LedgerItem]) -> Iterable[models.LedgerItem]:
+def _set_amount_eur(
+    items: Iterable[models.LedgerItem],
+) -> Iterable[models.AugmentedData]:
     """
     Set the amount in EUR for the transactions
     """
@@ -101,12 +93,15 @@ def _set_amount_eur(items: Iterable[models.LedgerItem]) -> Iterable[models.Ledge
     )
     for item in items:
         if item.currency == "EUR":
-            item.amount_eur = item.amount
+            amount_eur = item.amount
         else:
-            item.amount_eur = c.convert(
+            amount_eur = c.convert(
                 Decimal(str(item.amount)), item.currency, "EUR", date=item.tx_date
             )
-        yield item
+        yield models.AugmentedData(
+            tx_id=item.tx_id,
+            amount_eur=amount_eur,
+        )
 
 
 @sqlite.db
@@ -124,6 +119,17 @@ def dump(*, db: sqlite.Connection):
         with open(file_name, "w") as fd:
             data_buffer.seek(0)
             shutil.copyfileobj(data_buffer, fd)
+
+
+@sqlite.db
+def augment(*, db: sqlite.Connection):
+    """
+    Augment the data with useful information
+    """
+    repo = sqlite.LedgerItemRepo(db)
+
+    data = repo.filter(amount_eur__isnull=True)
+    repo.set_augmented_data(_set_amount_eur(data))
 
 
 ################
@@ -146,14 +152,13 @@ def push_to_gsheet(
 @gsheet.sheet
 @sqlite.db
 def pull_from_gsheet(*, db: sqlite.Connection, sheet: gsheet.SheetConnection):
-    local_repo = sqlite.LedgerItemRepo(db)
+    sqlite.LedgerItemRepo(db)
     remote_repo = gsheet.LedgerItemRepo(sheet_connection=sheet)
 
-    data = remote_repo.get_data()
-    data = _set_amount_eur(
-        data
-    )  # TODO: move this after the insertion, as "augmentation"
-    local_repo.insert(data, duplicate_strategy=sqlite.DuplicateStrategy.REPLACE)
+    # TODO: review
+    # data = remote_repo.get_data()
+    # new_data = _set_amount_eur(data)
+    # local_repo.set_augmented_data(new_data)
 
 
 ###################
@@ -179,14 +184,11 @@ def guess(
     db: sqlite.Connection,
     classifier_names: list[str],
     months: list[str],
-    to_sync_only: bool = False,
 ):
     local_repo = sqlite.LedgerItemRepo(db)
     data: list[models.LedgerItem] = sum(
         (list(local_repo.get_month_data(month)) for month in months), start=[]
     )
-    if to_sync_only:
-        data = [item for item in data if item.to_sync]
 
     classifier_classes = classifiers.get_classifiers()
     if classifier_names:
@@ -197,8 +199,23 @@ def guess(
         loaded for c in classifier_classes if (loaded := c().load())
     ]
 
+    new_data = list(_guess(data, classifiers_))
+
+    local_repo.set_augmented_data(new_data)
+
+
+def _guess(
+    data: list[models.LedgerItem],
+    classifiers_: list[classifiers.ClassifierInterface],
+) -> Iterable[models.AugmentedData]:
+    """
+    Guess the missing data
+    """
+
     for item in data:
         item_dict = models.asdict(item)
+        augmented_data = item_dict["augmented_data"] or dict(tx_id=item.tx_id)
+        new_augmented_data = augmented_data.copy()
         while True:
             predictions = [
                 classifier.predict_with_meta(item_dict) for classifier in classifiers_
@@ -208,7 +225,13 @@ def guess(
                     (field, value, confidence, distance)
                     for prediction_data, confidence, distance in predictions
                     for field, value in prediction_data.items()
-                    if not item_dict[field] and value
+                    if all(
+                        [
+                            not new_augmented_data.get(field),
+                            value,
+                            value != new_augmented_data.get(field),
+                        ]
+                    )
                 ],
                 key=lambda x: x[2],  # confidence
                 reverse=True,
@@ -216,16 +239,21 @@ def guess(
             if not field_predictions:
                 break
             field, value, confidence, distance = field_predictions[0]
-            if confidence < 0.5:
+            if confidence < 0.9:
                 break
             if distance < confidence / 2:
                 break
-            item_dict[field] = value
+            new_augmented_data[field] = value
 
-        update = False
-        for field, value in item_dict.items():
-            if getattr(item, field) != value:
-                setattr(item, field, value)
-                update = True
-        if update:
-            local_repo.update(item)
+        new_augmented_data["sub_category"] = new_augmented_data.pop(
+            "labels", None
+        )  # TODO: remove this
+        new_augmented_data = {
+            k: v
+            for k, v in new_augmented_data.items()
+            if v and v != augmented_data.get(k)
+        }
+        if new_augmented_data:
+            res = models.AugmentedData(tx_id=item.tx_id, **new_augmented_data)
+            logger.debug(f"guessed {res}")
+            yield res

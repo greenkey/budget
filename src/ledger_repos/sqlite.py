@@ -75,16 +75,6 @@ class LedgerItemRepo:
         Get all the items that match the given filters
         """
 
-        # qualified_fields = [
-        #     "li." + field
-        #     for field in models.LedgerItem.get_field_names()
-        # ]+[
-        #     "ad." + field
-        #     for field in models.AugmentedData.get_field_names()
-        # ]
-        # qualified_fields.remove("li.augmented_data")
-        # qualified_fields.remove("ad.tx_id")
-        # fields = ", ".join(qualified_fields)
         base_query = f"""
             select *
             from ledger_items li
@@ -188,22 +178,10 @@ class LedgerItemRepo:
             total_updates += result.rowcount
         logger.debug(f"A total of {total_updates} data points updated")
 
-    def get_month_data(
-        self, month: str, only_to_sync: bool = False
-    ) -> Iterable[models.LedgerItem]:
-        query = "SELECT * FROM ledger_items WHERE strftime('%Y-%m', tx_date) = :month"
-        # create cursor for query
-        cursor = self.db.execute(query, {"month": month})
-        # get columns from curosor
-        columns = [column[0] for column in cursor.description]
-        # run query to get dictionaries from sqlite
-        for row in cursor.fetchall():
-            # create dict
-            row = dict(zip(columns, row))
-            # convert dictionaries to LedgerItem objects
-            if only_to_sync and not row["to_sync"]:
-                continue
-            yield models.LedgerItem(**row)
+    def get_month_data(self, month: str) -> Iterable[models.LedgerItem]:
+        for item in self.filter(tx_datetime__gte=f"{month}-01"):
+            if item.tx_datetime.strftime("%Y-%m") == month:
+                yield item
 
     def dump(self, table_name: str) -> StringIO:
         """Return a StringIO with the contents of the given table in CSV format"""

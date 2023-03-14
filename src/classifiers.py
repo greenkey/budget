@@ -173,17 +173,20 @@ class CounterpartyFromDescriptionClassifier(ClassifierInterface):
     def predict_with_meta(
         self, item: dict[str, str]
     ) -> tuple[dict[str, str], float, float]:
-        if data := self.map.get(item["counterparty"]):
-            total = sum(data.values())
-            ordered = sorted(data.items(), key=lambda x: x[1], reverse=True)
-            category = ordered[0][0]
-            confidence = ordered[0][1] / total
-            if len(ordered) == 1:
-                distance = 0.0
-            else:
-                distance = (ordered[0][1] - ordered[1][1]) / total
-            return {"category": category}, confidence, distance
-        return {"category": ""}, 0.0, 0.0
+        if not (augmented_data := item.get("augmented_data")):
+            return {"category": ""}, 0.0, 0.0
+        if not (data := self.map.get(augmented_data["counterparty"])):  # type: ignore
+            return {"category": ""}, 0.0, 0.0
+
+        total = sum(data.values())
+        ordered = sorted(data.items(), key=lambda x: x[1], reverse=True)
+        category = ordered[0][0]
+        confidence = ordered[0][1] / total
+        if len(ordered) == 1:
+            distance = 0.0
+        else:
+            distance = (ordered[0][1] - ordered[1][1]) / total
+        return {"category": category}, confidence, distance
 
     def save(self):
         config.MODEL_FOLDER.mkdir(parents=True, exist_ok=True)

@@ -86,12 +86,37 @@ class Commands:
         """
         Review the transactions for a given month
         """
-        logger.info("Reviewing transactions")
+        logger.warn("Review command is deprecated")
         self.pull()
         self.fetch(**kwargs)
         self.train()
         self.guess(**kwargs)
         self.push()
+
+    def augment(self, **kwargs):
+        """
+        Augment the database
+        """
+        logger.info("Augmenting data")
+        application.augment()
+
+    def new_data(self, **kwargs):
+        """
+        Import new data, augment and push
+        """
+        self.train()
+        self.fetch(**kwargs)
+        self.augment()
+        self.guess()
+        self.push()
+
+    def sync(self, **kwargs):
+        """
+        Get data from google sheet, re-train, dump
+        """
+        self.pull()
+        self.train()
+        self.dump()
 
     def dump(self, **kwargs):
         """
@@ -110,7 +135,7 @@ class Commands:
         logger.info(f"Training classifiers: {classifiers}")
         application.train(classifier_names=classifiers)
 
-    def guess(self, classifiers: list[str] | None = None, to_sync_only=False, **kwargs):
+    def guess(self, classifiers: list[str] | None = None, **kwargs):
         """
         Backup the database
         """
@@ -118,7 +143,6 @@ class Commands:
         application.guess(
             classifier_names=classifiers,
             months=calculate_months(**kwargs),
-            to_sync_only=to_sync_only,
         )
 
 
