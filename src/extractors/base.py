@@ -86,7 +86,6 @@ class CsvImporter(Importer):
                 tx_id=models.calculate_unique_id(
                     f"{tx_datetime.isoformat()}:{amount}:{account}"
                 ),
-                tx_date=tx_datetime.date(),
                 tx_datetime=tx_datetime,
                 amount=amount,
                 currency=row["Currency"],

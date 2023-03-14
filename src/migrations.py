@@ -35,6 +35,7 @@ migrations = {
     10: """alter table ledger_items drop column labels;""",
     11: """alter table ledger_items drop column event_name;""",
     12: """alter table ledger_items drop column to_sync;""",
+    13: """alter table ledger_items drop column tx_date;""",
 }
 
 

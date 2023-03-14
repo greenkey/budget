@@ -61,7 +61,6 @@ class SplitWiseDownloader(base.Downloader):
 
         return models.LedgerItem(
             tx_id=hashlib.sha1(f"{account}-{expense.id}".encode("utf-8")).hexdigest(),
-            tx_date=tx_datetime.date(),
             tx_datetime=tx_datetime,
             amount=amount,
             currency=expense.currency_code,

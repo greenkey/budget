@@ -96,7 +96,10 @@ def _set_amount_eur(
             amount_eur = item.amount
         else:
             amount_eur = c.convert(
-                Decimal(str(item.amount)), item.currency, "EUR", date=item.tx_date
+                Decimal(str(item.amount)),
+                item.currency,
+                "EUR",
+                date=item.tx_datetime.date(),
             )
         yield models.AugmentedData(
             tx_id=item.tx_id,

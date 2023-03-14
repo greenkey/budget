@@ -54,7 +54,6 @@ def test_splitwise_online_retriever():
         [
             models.LedgerItem(
                 tx_id="19bfc6ba6fa1f36c7d69748487cac47607e3befa",
-                tx_date=datetime.date(2023, 2, 18),
                 tx_datetime=datetime.datetime(2023, 2, 18, 10, 41, 51, tzinfo=pytz.utc),
                 amount=Decimal("1.60"),
                 currency="EUR",
@@ -64,7 +63,6 @@ def test_splitwise_online_retriever():
             ),
             models.LedgerItem(
                 tx_id="f044bf2201796a0ff05c3864dfafa91cde931f02",
-                tx_date=datetime.date(2023, 2, 25),
                 tx_datetime=datetime.datetime(2023, 2, 25, 10, 41, 51, tzinfo=pytz.utc),
                 amount=Decimal("-50.92"),
                 currency="EUR",

@@ -37,7 +37,7 @@ class FinecoImporter(base.ExcelImporter):
 
         for item in self.get_records_from_file():
             # convert the date from a string like '29/01/2023' to a date object
-            tx_date = datetime.strptime(item["Data"], "%d/%m/%Y").date()
+            tx_datetime = datetime.strptime(item["Data"], "%d/%m/%Y")
 
             if item["Entrate"]:
                 amount = Decimal(item["Entrate"])
@@ -69,8 +69,7 @@ class FinecoImporter(base.ExcelImporter):
             if description.startswith("ESTRATTO CONTO"):
                 yield models.LedgerItem(
                     tx_id=self._calculate_tx_id(item),
-                    tx_date=tx_date,
-                    tx_datetime=datetime.combine(tx_date, datetime.min.time()),
+                    tx_datetime=tx_datetime,
                     amount=-amount,
                     currency="EUR",
                     description=description,
@@ -82,8 +81,7 @@ class FinecoImporter(base.ExcelImporter):
 
             yield models.LedgerItem(
                 tx_id=self._calculate_tx_id(item),
-                tx_date=tx_date,
-                tx_datetime=datetime.combine(tx_date, datetime.min.time()),
+                tx_datetime=tx_datetime,
                 amount=amount,
                 currency="EUR",
                 description=description,

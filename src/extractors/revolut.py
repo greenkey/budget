@@ -49,7 +49,6 @@ class RevolutImporter(base.ExcelImporter):
 
             ledger_item = models.LedgerItem(
                 tx_id=tx_id,
-                tx_date=tx_datetime.date(),
                 tx_datetime=tx_datetime,
                 amount=item["Amount"],
                 currency=item["Currency"],

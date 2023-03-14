@@ -14,7 +14,6 @@ def test_insert_ledger_item(db):
     assert len(result) == 3
     for i, ledger_item in enumerate(ledger_items):
         assert result[i]["tx_id"] == ledger_item.tx_id
-        assert result[i]["tx_date"] == ledger_item.tx_date.isoformat()
         assert result[i]["tx_datetime"] == ledger_item.tx_datetime.strftime(
             "%Y-%m-%d %H:%M:%S"
         )
@@ -64,14 +63,18 @@ def test_filter_by_date_gte(db):
 
     ledger_items = []
     for month in range(1, 13):
-        ledger_items.append(factories.LedgerItemFactory(tx_date=f"2020-{month:02d}-01"))
+        ledger_items.append(
+            factories.LedgerItemFactory(tx_datetime=f"2020-{month:02d}-01 12:00:00")
+        )
     repo.insert(ledger_items)
 
-    result = list(repo.filter(tx_date__gte=datetime.date(2020, 5, 1)))
+    result = list(repo.filter(tx_datetime__gte=datetime.date(2020, 5, 1)))
+    result = list(repo.filter(tx_datetime__gte=datetime.date(2020, 5, 1)))
 
     assert len(result) == 8
     assert all(
-        ledger_item.tx_date >= datetime.date(2020, 5, 1) for ledger_item in result
+        ledger_item.tx_datetime >= datetime.datetime(2020, 5, 1, 0)
+        for ledger_item in result
     )
 
 
