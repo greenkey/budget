@@ -89,6 +89,7 @@ class PaypalImporter(base.CsvImporter):
                 description=description,
                 account="Paypal",
                 ledger_item_type=ledger_item_type,
-                counterparty=row["Nome"] or None,
+                # TODO: set it somewhere else
+                # counterparty=row["Nome"] or None,
             )
             yield ledger_item

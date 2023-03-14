@@ -93,9 +93,6 @@ class CsvImporter(Importer):
                 description=row["Note"],
                 account=account,
                 ledger_item_type=ledger_item_type,
-                counterparty=row["Counterparty"].strip() or None,
-                category=row["Category name"].strip() or None,
-                labels=row["Labels"].strip() or None,
             )
             yield ledger_item
 

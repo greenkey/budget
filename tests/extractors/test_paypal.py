@@ -31,7 +31,7 @@ def test_paypal_importer(tmp_path: Path):
                 description="Wind Tre S.p.A.",
                 account="Paypal",
                 ledger_item_type=models.LedgerItemType.EXPENSE,
-                counterparty="Wind Tre S.p.A.",
+                # counterparty="Wind Tre S.p.A.",  # TODO: set it somewhere else
             ),
             models.LedgerItem(
                 tx_id="6UB39634XN226382J",
@@ -52,7 +52,7 @@ def test_paypal_importer(tmp_path: Path):
                 description="Alessandra Corsi",
                 account="Paypal",
                 ledger_item_type=models.LedgerItemType.INCOME,
-                counterparty="Alessandra Corsi",
+                # counterparty="Alessandra Corsi",  # TODO: set it somewhere else
             ),
             models.LedgerItem(
                 tx_id="8RG75117MG154511B",
@@ -63,7 +63,7 @@ def test_paypal_importer(tmp_path: Path):
                 description="Wikimedia Foundation, Inc. | Donazione mensile alla Wikimedia Foundation",
                 account="Paypal",
                 ledger_item_type=models.LedgerItemType.EXPENSE,
-                counterparty="Wikimedia Foundation, Inc.",
+                # counterparty="Wikimedia Foundation, Inc.",  # TODO: set it somewhere else
             ),
             models.LedgerItem(
                 tx_id="38R34771MX839654Y",
@@ -84,7 +84,7 @@ def test_paypal_importer(tmp_path: Path):
                 description="TicketOne S.p.a. | 2 biglietti Noel Gallagher's High Flying Birds a 09.07.19, Spese di spedizione, Polizza Biglietto sicuro",
                 account="Paypal",
                 ledger_item_type=models.LedgerItemType.EXPENSE,
-                counterparty="TicketOne S.p.a.",
+                # counterparty="TicketOne S.p.a.",  # TODO: set it somewhere else
             ),
         ]
     )

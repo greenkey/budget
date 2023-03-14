@@ -39,44 +39,10 @@ def test_filter_by_date_gte(db):
         assert ledger_item.tx_date >= datetime.date(2020, 5, 1)
 
 
-def test_insert_when_importing_files(db):
-    ledger_items = [factories.LedgerItemFactory() for _ in range(3)]
-    repo = LedgerItemRepo(db)
-    repo.insert(ledger_items, duplicate_strategy=DuplicateStrategy.SKIP)
-
-    result = list(query("SELECT * FROM ledger_items", db=db))
-    assert len(result) == 3
-    assert {item["to_sync"] for item in result} == {True}
-
-
 def test_insert_when_pulling(db):
-    ledger_items = [factories.LedgerItemFactory() for _ in range(3)]
-    repo = LedgerItemRepo(db)
-    repo.insert(ledger_items, duplicate_strategy=DuplicateStrategy.REPLACE)
-
-    result = list(query("SELECT * FROM ledger_items", db=db))
-    assert len(result) == 3
-    assert {item["to_sync"] for item in result} == {False}
-
-
-def test_update(db):
     ledger_items = [factories.LedgerItemFactory() for _ in range(3)]
     repo = LedgerItemRepo(db)
     repo.insert(ledger_items)
 
-    item_to_update = ledger_items[0]
-    item_to_update.counterparty = "new counterparty"
-    item_to_update.category = "new category"
-    item_to_update.labels = "new labels"
-    repo.update(item_to_update)
-
     result = list(query("SELECT * FROM ledger_items", db=db))
     assert len(result) == 3
-    for item in result:
-        if item["tx_id"] == item_to_update.tx_id:
-            assert item["counterparty"] == item_to_update.counterparty
-            assert item["category"] == item_to_update.category
-            assert item["labels"] == item_to_update.labels
-            assert item["to_sync"] == True
-        else:
-            assert item["to_sync"] == False

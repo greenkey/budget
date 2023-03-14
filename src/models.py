@@ -26,12 +26,6 @@ class LedgerItem:
     description: str
     account: str
     ledger_item_type: LedgerItemType  # enum containing TRANSFER, EXPENSE, INCOME
-    amount_eur: Decimal | None = None
-    event_name: str | None = None
-    counterparty: str | None = None
-    category: str | None = None
-    labels: str | None = None  # comma separated list of labels
-    to_sync: bool = False
 
     def __lt__(self, other: "LedgerItem") -> bool:
         # implement a check against hash to avoid duplicates
@@ -53,6 +47,7 @@ class LedgerItem:
 
     @classmethod
     def get_field_names(cls) -> list[str]:
+        # TODO make this simpler
         # returning a list to preserve the order
         field_names = [
             "tx_id",
@@ -63,10 +58,6 @@ class LedgerItem:
             "description",
             "account",
             "ledger_item_type",
-            "event_name",
-            "counterparty",
-            "category",
-            "labels",
         ]
         # add the missing ones
         for f in dataclasses.fields(cls):

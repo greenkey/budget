@@ -15,10 +15,6 @@ def test_creating_from_dict():
         "description": "test",
         "account": "Bank",
         "ledger_item_type": "transfer",
-        "event_name": "test",
-        "counterparty": "test",
-        "category": "test",
-        "labels": "test",
     }
     tx = models.LedgerItem(**tx_dict)
 
@@ -39,7 +35,3 @@ def test_to_dict():
     assert tx_dict["description"] == tx.description
     assert tx_dict["account"] == tx.account
     assert tx_dict["ledger_item_type"] == tx.ledger_item_type.value
-    assert tx_dict["event_name"] == tx.event_name
-    assert tx_dict["counterparty"] == tx.counterparty
-    assert tx_dict["category"] == tx.category
-    assert tx_dict["labels"] == tx.labels
