@@ -104,7 +104,8 @@ class SimpleClassifier(ClassifierInterface, abc.ABC):
             text_fields = "||','||".join(self.text_fields)
             data = pd.read_sql_query(
                 f"SELECT {text_fields} as text, {label} as label"
-                " FROM ledger_items"
+                " FROM ledger_items li "
+                " left join augmented_data ad on ad.tx_id = li.tx_id "
                 " where text is not null"
                 " and text != ''"
                 f" and label is not null"
@@ -121,8 +122,8 @@ class SimpleClassifier(ClassifierInterface, abc.ABC):
             self.model.fit(self.vectorizer.fit_transform(X), y)
 
 
-class CategoryLabelFromDescriptionCounterpartyClassifier(SimpleClassifier):
-    label_fields = ["category", "labels"]
+class CategorySubCategoryFromDescriptionCounterpartyClassifier(SimpleClassifier):
+    label_fields = ["category", "sub_category"]
     text_fields = [
         "description",
         "counterparty",
@@ -137,15 +138,6 @@ class CategoryFromDescriptionCounterpartyClassifier(SimpleClassifier):
     ]
 
 
-# class LabelFromDescriptionCounterpartyCategoryClassifier(SimpleClassifier):
-#     label_fields = ["labels"]
-#     text_fields = [
-#         "category",
-#         "description",
-#         "counterparty",
-#     ]
-
-
 def _submap():
     return defaultdict(int)
 
@@ -158,7 +150,8 @@ class CounterpartyFromDescriptionClassifier(ClassifierInterface):
         with sqlite.db_context(db_path) as db:
             sql = """
                 SELECT counterparty, category
-                FROM ledger_items
+                FROM ledger_items li
+                left join augmented_data ad on ad.tx_id = li.tx_id
                 where counterparty is not null
                 and counterparty != ''
                 """
