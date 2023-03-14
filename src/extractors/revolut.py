@@ -36,10 +36,8 @@ class RevolutImporter(base.ExcelImporter):
             else:
                 account = f"Revolut {item['Product']}"
 
-            category = None
             if item["Type"] in ("TRANSFER", "TOPUP", "EXCHANGE"):
                 ledger_item_type = models.LedgerItemType.TRANSFER
-                category = "Transfer"
             elif amount > 0:
                 ledger_item_type = models.LedgerItemType.INCOME
             else:
@@ -58,6 +56,5 @@ class RevolutImporter(base.ExcelImporter):
                 description=item["Description"],
                 account=account,
                 ledger_item_type=ledger_item_type,
-                category=category,
             )
             yield ledger_item

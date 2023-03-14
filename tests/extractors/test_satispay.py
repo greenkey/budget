@@ -28,7 +28,7 @@ def test_satispay_importer(tmp_path: Path):
                 description="Peter Fields",
                 account="Satispay",
                 ledger_item_type=models.LedgerItemType.INCOME,
-                counterparty="Peter Fields",
+                # counterparty="Peter Fields",  # TODO: set it somewhere else
             ),
             models.LedgerItem(
                 tx_id="753e4d17-4e88-4b0d-bc39-7c072da6ce04",
@@ -39,7 +39,7 @@ def test_satispay_importer(tmp_path: Path):
                 description="Bar Vintage",
                 account="Satispay",
                 ledger_item_type=models.LedgerItemType.EXPENSE,
-                counterparty="Bar Vintage",
+                # counterparty="Bar Vintage",  # TODO: set it somewhere else
             ),
             models.LedgerItem(
                 tx_id="e43a0891-5297-443e-a92f-3564bf6c8a40",
@@ -50,7 +50,7 @@ def test_satispay_importer(tmp_path: Path):
                 description="Sakura Giapponese",
                 account="Satispay",
                 ledger_item_type=models.LedgerItemType.EXPENSE,
-                counterparty="Sakura Giapponese",
+                # counterparty="Sakura Giapponese",  # TODO: set it somewhere else
             ),
         ]
     )

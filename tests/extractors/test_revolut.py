@@ -47,7 +47,6 @@ def test_revolut_importer():
                 description="Exchanged to GBP",
                 account="Revolut EUR",
                 ledger_item_type=models.LedgerItemType.TRANSFER,
-                category="Transfer",
             ),
         ]
     )

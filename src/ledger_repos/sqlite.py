@@ -60,6 +60,7 @@ def query(sql: str, db: sqlite3.Connection) -> Generator[dict[str, Any], None, N
 
 
 class DuplicateStrategy(enum.Enum):
+    # TODO: deprecated, to delete
     RAISE = "raise"
     REPLACE = "replace"
     SKIP = "skip"
@@ -87,7 +88,9 @@ class LedgerItemRepo:
                 filters.append(f"{field} = :{field}")
             elif operator == "gte":
                 filters.append(f"{field} >= :{field}")
-        query = "SELECT * FROM ledger_items WHERE " + " AND ".join(filters)
+
+        fields = ", ".join(models.LedgerItem.get_field_names())
+        query = f"SELECT {fields} FROM ledger_items WHERE " + " AND ".join(filters)
 
         cursor = self.db.execute(query, query_params)
 
@@ -101,29 +104,17 @@ class LedgerItemRepo:
     def insert(
         self,
         ledger_items: Iterable[models.LedgerItem],
-        duplicate_strategy: DuplicateStrategy = DuplicateStrategy.RAISE,
     ):
         field_names = models.LedgerItem.get_field_names()
         fields = ", ".join(field_names)
         placeholders = ", ".join(f":{field}" for field in field_names)
 
-        duplicate_strategy_str = {
-            DuplicateStrategy.RAISE: "OR FAIL",
-            DuplicateStrategy.REPLACE: "OR REPLACE",
-            DuplicateStrategy.SKIP: "OR IGNORE",
-        }[duplicate_strategy]
-
         # if we are skipping duplicates, it means we are in import phase, we want to sync them
         ledger_items = list(ledger_items)
-        if duplicate_strategy == DuplicateStrategy.SKIP:
-            for ledger_item in ledger_items:
-                ledger_item.to_sync = True
-
-        logger.debug(f"Inserting {len(ledger_items)} items into the database")
 
         result = self.db.executemany(
             f"""
-            INSERT {duplicate_strategy_str} INTO ledger_items ({fields}) VALUES ({placeholders})
+            INSERT OR REPLACE INTO ledger_items ({fields}) VALUES ({placeholders})
             """,
             [models.asdict(ledger_item) for ledger_item in ledger_items],
         )
@@ -145,21 +136,6 @@ class LedgerItemRepo:
             if only_to_sync and not row["to_sync"]:
                 continue
             yield models.LedgerItem(**row)
-
-    def update(self, ledger_item: models.LedgerItem):
-        field_names = models.LedgerItem.get_field_names()
-        field_names.remove("tx_id")
-        set_string = ", ".join(f"{field} = :{field}" for field in field_names)
-
-        # ensure to_sync is set to True
-        ledger_item.to_sync = True
-
-        self.db.execute(
-            f"""
-            UPDATE ledger_items SET {set_string} WHERE tx_id = :tx_id
-            """,
-            models.asdict(ledger_item),
-        )
 
     def dump(self, table_name: str) -> StringIO:
         """Return a StringIO with the contents of the given table in CSV format"""
