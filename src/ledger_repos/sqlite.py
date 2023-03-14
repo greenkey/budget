@@ -74,6 +74,23 @@ class LedgerItemRepo:
         """
         Get all the items that match the given filters
         """
+
+        # qualified_fields = [
+        #     "li." + field
+        #     for field in models.LedgerItem.get_field_names()
+        # ]+[
+        #     "ad." + field
+        #     for field in models.AugmentedData.get_field_names()
+        # ]
+        # qualified_fields.remove("li.augmented_data")
+        # qualified_fields.remove("ad.tx_id")
+        # fields = ", ".join(qualified_fields)
+        base_query = f"""
+            select *
+            from ledger_items li
+	            left join augmented_data ad on ad.tx_id = li.tx_id
+            where """
+
         filters = ["1=1"]
         query_params = {}
         for key, value in kwargs.items():
@@ -88,14 +105,13 @@ class LedgerItemRepo:
                 filters.append(f"{field} = :{key}")
             elif operator == "gte":
                 filters.append(f"{field} >= :{key}")
+            elif operator == "isnull":
+                if value:
+                    filters.append(f"{field} is null")
+                else:
+                    filters.append(f"{field} is not null")
 
-        query = f"""
-            select *
-            from ledger_items li
-	            left join augmented_data ad on ad.tx_id = li.tx_id
-            where """ + " AND ".join(
-            filters
-        )
+        query = base_query + " AND ".join(filters)
 
         cursor = self.db.execute(query, query_params)
 
@@ -140,6 +156,10 @@ class LedgerItemRepo:
             [models.asdict(ledger_item) for ledger_item in ledger_items],
         )
         logger.debug(f"Inserted {result.rowcount} ledger items")
+
+        self.set_augmented_data(
+            [item.augmented_data for item in ledger_items if item.augmented_data]
+        )
 
     def set_augmented_data(self, augmented_data: Iterable[models.AugmentedData]):
         field_names = models.AugmentedData.get_field_names()
