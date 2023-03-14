@@ -15,7 +15,7 @@ def test_commit_updates(sheet_mock):
     sheet_mock.values().batchUpdate.assert_called_once_with(
         spreadsheetId="fake_shee_id",
         body={
-            "value_input_option": "USER_ENTERED",
+            "value_input_option": "RAW",
             "data": [
                 {"range": "A1", "values": [["a", "b"]]},
                 {"range": "A2", "values": [["c", "d"]]},
@@ -39,7 +39,7 @@ def test_commit_updates_and_clears(sheet_mock):
         call.batchUpdate(
             spreadsheetId="fake_shee_id",
             body={
-                "value_input_option": "USER_ENTERED",
+                "value_input_option": "RAW",
                 "data": [
                     {"range": "A1", "values": [["a", "b"]]},
                 ],
@@ -54,7 +54,7 @@ def test_commit_updates_and_clears(sheet_mock):
         call.batchUpdate(
             spreadsheetId="fake_shee_id",
             body={
-                "value_input_option": "USER_ENTERED",
+                "value_input_option": "RAW",
                 "data": [
                     {"range": "A2", "values": [["c", "d"]]},
                     {"range": "A3", "values": [["e", "f"]]},
