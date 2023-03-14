@@ -150,13 +150,17 @@ class SheetConnection:
         )
         return request.execute()
 
-    def _flush(self, op_type: str, queue):
+    def _throttle(self):
         # wait until the last operation is at least 1 second old to avoid hitting the rate limit
         while (datetime.datetime.now() - self.last_flushed) < datetime.timedelta(
             seconds=1
         ):
             time.sleep(0.1)
         self.last_flushed = datetime.datetime.now()
+
+    def _flush(self, op_type: str, queue):
+        # wait until the last operation is at least 1 second old to avoid hitting the rate limit
+        self._throttle()
         if queue:
             if op_type == "update":
                 self._update(queue)
