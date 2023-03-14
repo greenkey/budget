@@ -75,6 +75,33 @@ def test_filter_by_date_gte(db):
     )
 
 
+def test_filter_by_isnull(db):
+    repo = LedgerItemRepo(db)
+
+    ledger_items = []
+    for i in range(10):
+        if i % 2 == 0:
+            ledger_items.append(factories.LedgerItemFactory())
+        else:
+            ledger_items.append(
+                factories.LedgerItemFactory(augmented_data__category=None)
+            )
+    repo.insert(ledger_items)
+
+    result = list(repo.filter(category__isnull=True))
+
+    assert len(result) == 5
+    assert set(
+        ledger_item.tx_id
+        for ledger_item in result
+        if ledger_item.augmented_data.category is None
+    ) == {
+        ledger_item.tx_id
+        for ledger_item in ledger_items
+        if ledger_item.augmented_data.category is None
+    }
+
+
 def test_insert_when_pulling(db):
     ledger_items = [factories.LedgerItemFactory() for _ in range(3)]
     repo = LedgerItemRepo(db)
