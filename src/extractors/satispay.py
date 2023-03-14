@@ -29,7 +29,9 @@ class SatispayImporter(base.CsvImporter):
         date_str, time_str = datetime_str.split(", ")
         day, month, year = date_str.split(" ")
         month = self.italian_months[month]
-        return datetime.strptime(f"{day} {month} {year}, {time_str}", "%d %b %Y, %H:%M:%S")
+        return datetime.strptime(
+            f"{day} {month} {year}, {time_str}", "%d %b %Y, %H:%M:%S"
+        )
 
     def get_ledger_items(self) -> Generator[models.LedgerItem, None, None]:
         # fields to import: Extra,Amount EUR
@@ -37,7 +39,9 @@ class SatispayImporter(base.CsvImporter):
             tx_datetime = self._parse_italian_date(row["date"])
             amount = Decimal(row["amount"])
             ledger_item_type = (
-                models.LedgerItemType.EXPENSE if amount < 0 else models.LedgerItemType.INCOME
+                models.LedgerItemType.EXPENSE
+                if amount < 0
+                else models.LedgerItemType.INCOME
             )
             ledger_item = models.LedgerItem(
                 tx_id=row["id"],

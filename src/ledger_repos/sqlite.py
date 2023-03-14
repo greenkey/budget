@@ -1,9 +1,10 @@
 import csv
 import enum
-from io import StringIO
 import logging
 import sqlite3
 from contextlib import contextmanager
+from io import StringIO
+from pathlib import Path
 from typing import Any, Callable, Generator, Iterable
 
 import config
@@ -16,7 +17,9 @@ Connection = sqlite3.Connection
 
 
 @contextmanager
-def db_context(db_path: str | None = None) -> Generator[sqlite3.Connection, None, None]:
+def db_context(
+    db_path: str | Path | None = None,
+) -> Generator[sqlite3.Connection, None, None]:
     """
     Get the default database
     """
@@ -126,11 +129,6 @@ class LedgerItemRepo:
         )
         logger.debug(f"Inserted {result.rowcount} rows")
 
-    def get_months(self) -> Iterable[str]:
-        query = "SELECT DISTINCT strftime('%Y-%m', tx_date) FROM ledger_items ORDER BY tx_date"
-        for row in self.db.execute(query):
-            yield row[0]
-
     def get_month_data(
         self, month: str, only_to_sync: bool = False
     ) -> Iterable[models.LedgerItem]:
@@ -147,28 +145,6 @@ class LedgerItemRepo:
             if only_to_sync and not row["to_sync"]:
                 continue
             yield models.LedgerItem(**row)
-
-    def get_updated_data_by_month(self) -> Iterable[tuple[str, Iterable[models.LedgerItem]]]:
-        # get all the months that have to_sync set to True
-        query = "SELECT DISTINCT strftime('%Y-%m', tx_date) FROM ledger_items WHERE to_sync = 1"
-        for row in self.db.execute(query):
-            month = row[0]
-            yield month, self.get_month_data(month, only_to_sync=True)
-
-    def mark_month_as_synced(self, month: str):
-        self.db.execute(
-            "UPDATE ledger_items SET to_sync = FALSE WHERE strftime('%Y-%m', tx_date) = :month",
-            {"month": month},
-        )
-
-    def replace_month_data(self, month: str, ledger_items: Iterable[models.LedgerItem]):
-        # delete all rows for the month
-        self.db.execute(
-            "DELETE FROM ledger_items WHERE strftime('%Y-%m', tx_date) = :month",
-            {"month": month},
-        )
-        # insert new rows
-        self.insert(ledger_items, duplicate_strategy=DuplicateStrategy.REPLACE)
 
     def update(self, ledger_item: models.LedgerItem):
         field_names = models.LedgerItem.get_field_names()

@@ -6,8 +6,6 @@ from itertools import count
 from pathlib import Path
 from typing import Generator
 
-import openpyxl
-
 from src import models
 
 from . import base
@@ -28,7 +26,7 @@ class FinecoImporter(base.ExcelImporter):
 
     def __init__(self, file_path: str | Path):
         super().__init__(file_path)
-        self.dates_counter = defaultdict(count)
+        self.dates_counter: dict[str, count] = defaultdict(count)
 
     def _calculate_tx_id(self, item: dict) -> str:
         # assume the transactions are always in the same order within the date
@@ -37,18 +35,10 @@ class FinecoImporter(base.ExcelImporter):
 
     def get_ledger_items(self) -> Generator[models.LedgerItem, None, None]:
         # the two lines below are used to calculate the unique id for each transaction
-        tx_num_for_day = 0
-        latest_tx_date = None
 
         for item in self.get_records_from_file():
             # convert the date from a string like '29/01/2023' to a date object
             tx_date = datetime.strptime(item["Data"], "%d/%m/%Y").date()
-
-            if latest_tx_date == tx_date:
-                tx_num_for_day += 1
-            else:
-                tx_num_for_day = 0
-                latest_tx_date = tx_date
 
             if item["Entrate"]:
                 amount = Decimal(item["Entrate"])

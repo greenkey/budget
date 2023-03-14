@@ -1,5 +1,3 @@
-from unittest.mock import MagicMock
-
 import factory
 import splitwise
 
@@ -64,8 +62,8 @@ class ExpenseDict(factory.DictFactory):
     category = factory.SubFactory(CategoryDict)
     updated_by = factory.SubFactory(UserDict)
     deleted_by = None
-    users = []
-    repayments = []
+    users = []  # type: ignore
+    repayments = []  # type: ignore
 
 
 def Expense(**kwargs):
