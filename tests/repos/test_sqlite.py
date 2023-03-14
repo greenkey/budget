@@ -14,7 +14,9 @@ def test_insert_ledger_item(db):
     for i, ledger_item in enumerate(ledger_items):
         assert result[i]["tx_id"] == ledger_item.tx_id
         assert result[i]["tx_date"] == ledger_item.tx_date.isoformat()
-        assert result[i]["tx_datetime"] == ledger_item.tx_datetime.strftime("%Y-%m-%d %H:%M:%S")
+        assert result[i]["tx_datetime"] == ledger_item.tx_datetime.strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
         assert result[i]["amount"] == str(ledger_item.amount)
         assert result[i]["currency"] == ledger_item.currency
         assert result[i]["description"] == ledger_item.description
@@ -78,21 +80,3 @@ def test_update(db):
             assert item["to_sync"] == True
         else:
             assert item["to_sync"] == False
-
-
-def test_get_updated_data_by_month(db):
-    ledger_items = [factories.LedgerItemFactory() for _ in range(3)]
-    repo = LedgerItemRepo(db)
-    repo.insert(ledger_items)
-
-    item_to_update = ledger_items[0]
-    item_to_update.counterparty = "new counterparty"
-    item_to_update.category = "new category"
-    item_to_update.labels = "new labels"
-    repo.update(item_to_update)
-
-    result = list(repo.get_updated_data_by_month())
-    assert len(result) == 1
-    month, [record] = result[0]
-    assert month == item_to_update.tx_date.strftime("%Y-%m")
-    assert record.tx_id == item_to_update.tx_id

@@ -66,14 +66,19 @@ class PaypalImporter(base.CsvImporter):
                 description = row["Nome"]
             else:
                 description = row["Tipo"]
-            if row["Tipo"] in ("Conversione di valuta generica", "Versamento generico con carta"):
+            if row["Tipo"] in (
+                "Conversione di valuta generica",
+                "Versamento generico con carta",
+            ):
                 ledger_item_type = models.LedgerItemType.TRANSFER
             elif row["Impatto sul saldo"] == "Addebito":
                 ledger_item_type = models.LedgerItemType.EXPENSE
             elif row["Impatto sul saldo"] == "Accredito":
                 ledger_item_type = models.LedgerItemType.INCOME
             else:
-                raise ValueError(f"Unknown ledger item type: {row['Impatto sul saldo']}")
+                raise ValueError(
+                    f"Unknown ledger item type: {row['Impatto sul saldo']}"
+                )
 
             ledger_item = models.LedgerItem(
                 tx_id=row["Codice transazione"],

@@ -1,10 +1,10 @@
 import hashlib
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from decimal import Decimal
-from typing import Generator
 
 import splitwise
 from dateutil import parser
+from pyparsing import Iterable
 
 import config
 from src import models
@@ -24,7 +24,7 @@ class SplitWiseDownloader(base.Downloader):
         )
         self.user_id = self.client.getCurrentUser().id
 
-    def get_ledger_items(self, month: str | None) -> Generator[models.LedgerItem, None, None]:
+    def get_ledger_items(self, month: str | None) -> Iterable[models.LedgerItem]:
         if month:
             dated_after_str = f"{month}-01"
             dated_before = date.fromisoformat(dated_after_str) + timedelta(days=31)
@@ -39,7 +39,9 @@ class SplitWiseDownloader(base.Downloader):
             if ledger_item:
                 yield ledger_item
 
-    def _ledger_item_from_expense(self, expense: splitwise.Expense) -> models.LedgerItem:
+    def _ledger_item_from_expense(
+        self, expense: splitwise.Expense
+    ) -> models.LedgerItem | None:
         account = "Splitwise"
 
         try:
@@ -49,7 +51,9 @@ class SplitWiseDownloader(base.Downloader):
         amount = Decimal(my_part.net_balance)
 
         ledger_item_type = (
-            models.LedgerItemType.INCOME if amount > 0 else models.LedgerItemType.EXPENSE
+            models.LedgerItemType.INCOME
+            if amount > 0
+            else models.LedgerItemType.EXPENSE
         )
 
         # parse datetime from string like 2021-02-18T10:00:00Z

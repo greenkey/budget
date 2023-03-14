@@ -19,7 +19,7 @@ def test_calculate_previous():
 
 
 @time_machine.travel("2021-02-23")
-def test_calculate_previous():
+def test_calculate_from_start():
     assert calculate_months(month_start="2020-12") == [
         "2020-12",
         "2021-01",
@@ -27,7 +27,7 @@ def test_calculate_previous():
     ]
 
 
-def test_calculate_previous():
+def test_calculate_month_range():
     assert calculate_months(month_start="2021-01", month_end="2021-06") == [
         "2021-01",
         "2021-02",

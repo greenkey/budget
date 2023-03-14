@@ -6,7 +6,9 @@ from src import application, extractors
 
 @patch.object(extractors, "get_importers")
 @patch.object(application, "_import_file")
-def test_import_files_process_files(mock_import_file: MagicMock, get_importers: MagicMock):
+def test_import_files_process_files(
+    mock_import_file: MagicMock, get_importers: MagicMock
+):
     importer_class = MagicMock()
     mock_import_file.return_value = []
     get_importers.return_value = [importer_class]
@@ -31,7 +33,9 @@ def test_import_files_runs_one_importer_for_each_file(get_importers: MagicMock):
 
 
 @patch.object(extractors, "get_importers")
-def test_import_files_raises_extractor_not_found_error(get_importers: MagicMock, caplog):
+def test_import_files_raises_extractor_not_found_error(
+    get_importers: MagicMock, caplog
+):
     importer_class = MagicMock()
     importer_class().get_ledger_items.side_effect = extractors.FormatFileError
     get_importers.return_value = [importer_class]

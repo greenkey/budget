@@ -2,6 +2,7 @@ import datetime
 import logging
 import shutil
 from decimal import Decimal
+from itertools import chain
 from pathlib import Path
 from typing import Iterable
 
@@ -16,10 +17,6 @@ logger = logging.getLogger(__name__)
 
 ############
 ### GET DATA
-
-
-class ExtractorNotFoundError(ValueError):
-    pass
 
 
 def import_files(*, files: list[Path]):
@@ -52,7 +49,7 @@ def _import_file(file_path: Path, importer_class: type[extractors.Importer]):
     return data
 
 
-def download(*, months: list[str] | None = None):
+def download(*, months: list[str]):
     """
     Download the transactions for a given month
     """
@@ -60,12 +57,9 @@ def download(*, months: list[str] | None = None):
     for downloader_class in extractors.get_downloaders():
         client = downloader_class()
 
-        if months:
-            ledger_items = []
-            for month in months:
-                ledger_items.extend(client.get_ledger_items(month))
-        else:
-            ledger_items = client.get_ledger_items()
+        ledger_items: Iterable[models.LedgerItem] = chain(
+            *[client.get_ledger_items(month) for month in months]
+        )
 
         store(items=ledger_items, duplicate_strategy=sqlite.DuplicateStrategy.SKIP)
 
@@ -78,7 +72,7 @@ def download(*, months: list[str] | None = None):
 def store(
     *,
     db: sqlite.Connection,
-    items: list[models.LedgerItem],
+    items: Iterable[models.LedgerItem],
     duplicate_strategy: sqlite.DuplicateStrategy | None = None,
 ):
     """
@@ -156,7 +150,9 @@ def pull_from_gsheet(*, db: sqlite.Connection, sheet: gsheet.SheetConnection):
     remote_repo = gsheet.LedgerItemRepo(sheet_connection=sheet)
 
     data = remote_repo.get_data()
-    data = _set_amount_eur(data)  # TODO: move this after the insertion, as "augmentation"
+    data = _set_amount_eur(
+        data
+    )  # TODO: move this after the insertion, as "augmentation"
     local_repo.insert(data, duplicate_strategy=sqlite.DuplicateStrategy.REPLACE)
 
 
@@ -167,7 +163,9 @@ def pull_from_gsheet(*, db: sqlite.Connection, sheet: gsheet.SheetConnection):
 def train(classifier_names: list[str] | None = None):
     classifier_classes = classifiers.get_classifiers()
     if classifier_names:
-        classifier_classes = [c for c in classifier_classes if c.__name__ in classifier_names]
+        classifier_classes = [
+            c for c in classifier_classes if c.__name__ in classifier_names
+        ]
     for classifier_class in classifier_classes:
         classifier = classifier_class()
         logger.info(f"training {classifier.name}")
@@ -184,15 +182,17 @@ def guess(
     to_sync_only: bool = False,
 ):
     local_repo = sqlite.LedgerItemRepo(db)
-    data = sum((list(local_repo.get_month_data(month)) for month in months), start=[])
+    data: list[models.LedgerItem] = sum(
+        (list(local_repo.get_month_data(month)) for month in months), start=[]
+    )
     if to_sync_only:
         data = [item for item in data if item.to_sync]
 
-    data_with_prediction = []
-
     classifier_classes = classifiers.get_classifiers()
     if classifier_names:
-        classifier_classes = [c for c in classifier_classes if c.__name__ in classifier_names]
+        classifier_classes = [
+            c for c in classifier_classes if c.__name__ in classifier_names
+        ]
     classifiers_: list[classifiers.ClassifierInterface] = [
         loaded for c in classifier_classes if (loaded := c().load())
     ]
@@ -200,7 +200,9 @@ def guess(
     for item in data:
         item_dict = models.asdict(item)
         while True:
-            predictions = [classifier.predict_with_meta(item_dict) for classifier in classifiers_]
+            predictions = [
+                classifier.predict_with_meta(item_dict) for classifier in classifiers_
+            ]
             field_predictions = sorted(
                 [
                     (field, value, confidence, distance)
@@ -226,18 +228,4 @@ def guess(
                 setattr(item, field, value)
                 update = True
         if update:
-            local_repo.update(item)
-
-    # order by confidence
-    data_with_prediction.sort(key=lambda x: x[2][1], reverse=True)
-
-    for item, field, (prediction, confidence, _) in data_with_prediction:
-        if prediction:
-            print(f"{prediction} | {item.description}")
-            if "," in field:
-                to_update = {k: v for k, v in zip(field.split(","), prediction)}
-            else:
-                to_update = {field: prediction}
-            for field, prediction in to_update.items():
-                setattr(item, field, prediction)
             local_repo.update(item)

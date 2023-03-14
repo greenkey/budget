@@ -5,8 +5,6 @@ from typing import Generator
 from src import models
 from src.extractors import base
 
-from . import base
-
 
 class RevolutImporter(base.ExcelImporter):
     skip_lines = 1

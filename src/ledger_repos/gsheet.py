@@ -39,19 +39,14 @@ def get_creds(force: bool = False):
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(config.GSHEET_CREDENTIALS, SCOPES)
+            flow = InstalledAppFlow.from_client_secrets_file(
+                config.GSHEET_CREDENTIALS, SCOPES
+            )
             creds = flow.run_local_server(port=0)
         # Save the credentials for the next run
         with open("token.json", "w") as token:
             token.write(creds.to_json())
     return creds
-
-
-def main(force: bool = False):
-    """
-    hows basic usage of the Sheets API.
-    Prints values from a sample spreadsheet.
-    """
 
 
 def main(force: bool = False):
@@ -99,7 +94,6 @@ class SheetConnection:
 
     @property
     def sheet(self):
-        self.credentials = config.GSHEET_CREDENTIALS or "credentials.json"
         creds = get_creds()
         service = build("sheets", "v4", credentials=creds)
         return service.spreadsheets()
@@ -114,8 +108,10 @@ class SheetConnection:
         meta = self._get_meta()
         return [sheet["properties"]["title"] for sheet in meta["sheets"]]
 
-    def update(self, range: str, values: Iterable[Iterable[str]]):
-        self.operations_to_commit.append(Operation(type="update", range=range, values=values))
+    def update(self, range: str, values: list[list[str]]):
+        self.operations_to_commit.append(
+            Operation(type="update", range=range, values=values)
+        )
 
     def _update(self, queue):
         batch_update_values_request_body = {
@@ -128,8 +124,10 @@ class SheetConnection:
         )
         return request.execute()
 
-    def append(self, range: str, values: Iterable[Iterable[str]]):
-        self.operations_to_commit.append(Operation(type="append", range=range, values=values))
+    def append(self, range: str, values: list[list[str]]):
+        self.operations_to_commit.append(
+            Operation(type="append", range=range, values=values)
+        )
 
     def _append(self, queue):
         for op in queue:
@@ -154,7 +152,9 @@ class SheetConnection:
 
     def _flush(self, op_type: str, queue):
         # wait until the last operation is at least 1 second old to avoid hitting the rate limit
-        while (datetime.datetime.now() - self.last_flushed) < datetime.timedelta(seconds=1):
+        while (datetime.datetime.now() - self.last_flushed) < datetime.timedelta(
+            seconds=1
+        ):
             time.sleep(0.1)
         self.last_flushed = datetime.datetime.now()
         if queue:
@@ -180,12 +180,16 @@ class SheetConnection:
         self._flush(op_type, queue)
 
     def rollback(self):
-        self.update_to_commit = []
+        pass
 
     def get(self, range: str):
         try:
-            result = self.sheet.values().get(spreadsheetId=self.sheet_id, range=range).execute()
-        except HttpError as err:
+            result = (
+                self.sheet.values()
+                .get(spreadsheetId=self.sheet_id, range=range)
+                .execute()
+            )
+        except HttpError:
             return []
         else:
             return result.get("values", [])
@@ -223,10 +227,12 @@ class GSheetRepo:
         self.sheet_connection = sheet_connection
         self.header = models.LedgerItem.get_field_names()
 
-    def _parse_datetime(self, value: str) -> datetime:
+    def _parse_datetime(self, value: str) -> datetime.datetime | str:
         try:
             # convert spreadsheet serial to datetime
-            return datetime.datetime(1899, 12, 30) + datetime.timedelta(days=float(value))
+            return datetime.datetime(1899, 12, 30) + datetime.timedelta(
+                days=float(value)
+            )
         except ValueError:
             pass  # try again
 
@@ -266,7 +272,9 @@ class LedgerItemRepo(GSheetRepo):
         dict_items = [self._item_to_dict(item) for item in ledger_items]
         values = [[item.get(f, None) for f in self.header] for item in dict_items]
 
-        self.sheet_connection.update(_range(self.ledger_sheet, f"2:{1+len(values)}"), values)
+        self.sheet_connection.update(
+            _range(self.ledger_sheet, f"2:{1+len(values)}"), values
+        )
 
     def _item_to_dict(self, item: models.LedgerItem) -> dict:
         data_dict = models.asdict(item)
@@ -279,9 +287,11 @@ class LedgerItemRepo(GSheetRepo):
         for row in values:
             dict_data = dict(zip(header, row))
             dict_data = {
-                k: v for k, v in dict_data.items() if k in models.LedgerItem.get_field_names()
+                k: v
+                for k, v in dict_data.items()
+                if k in models.LedgerItem.get_field_names()
             }
             # convert dates to datetime
-            dict_data["tx_date"] = self._parse_datetime(dict_data["tx_date"]).date()
+            dict_data["tx_date"] = self._parse_datetime(dict_data["tx_date"]).date()  # type: ignore
             dict_data["tx_datetime"] = self._parse_datetime(dict_data["tx_datetime"])
             yield models.LedgerItem(**dict_data)

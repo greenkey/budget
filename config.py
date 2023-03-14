@@ -11,7 +11,7 @@ IMPORT_FOLDER = ROOT_FOLDER / os.getenv("IMPORT_FOLDER", "import_files")
 DB_PATH = ROOT_FOLDER / os.getenv("DB_PATH", "data/budget.db")
 MODEL_FOLDER = ROOT_FOLDER / os.getenv("MODEL_FOLDER", "models")
 
-GSHEET_SHEET_ID = os.getenv("GSHEET_SHEET_ID")
+GSHEET_SHEET_ID = os.getenv("GSHEET_SHEET_ID", "CHANGE_ME")
 GSHEET_CREDENTIALS = ROOT_FOLDER / os.getenv("GSHEET_CREDENTIALS", "credentials.json")
 
 SPLITWISE_CONSUMER_KEY = os.getenv("SPLITWISE_CONSUMER_KEY")

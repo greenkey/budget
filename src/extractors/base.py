@@ -3,10 +3,10 @@ from csv import DictReader
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
-from typing import Generator, Optional, Union
+from typing import Generator, Union
 
 import openpyxl
-from pyparsing import Any
+from pyparsing import Any, Iterable
 
 from src import models, utils
 
@@ -39,13 +39,8 @@ class Importer(abc.ABC):
 
 
 class Downloader(abc.ABC):
-    def __init__(self, file_path: Union[str, Path]):
-        self.source_file = Path(file_path)
-
     @abc.abstractmethod
-    def get_ledger_items(
-        self, month: str | None = None
-    ) -> Generator[models.LedgerItem, None, None]:
+    def get_ledger_items(self, month: str) -> Iterable[models.LedgerItem]:
         raise NotImplementedError()
 
 
@@ -62,7 +57,7 @@ class CsvImporter(Importer):
         "Labels",
     ]
 
-    def get_records_from_file(self) -> Generator[tuple, None, None]:
+    def get_records_from_file(self) -> Iterable[dict[str, Any]]:
         """
         Open the csv file and return a generator of tuples containing the data
         """
@@ -71,7 +66,7 @@ class CsvImporter(Importer):
 
             # if the columns are not the expected ones, raise an error
             try:
-                file_columns = set(reader.fieldnames)
+                file_columns = set(reader.fieldnames or [])
             except UnicodeDecodeError:
                 raise FormatFileError(f"Unable to open file {self.source_file}")
             if not set(self.columns).issubset(file_columns):
@@ -88,6 +83,9 @@ class CsvImporter(Importer):
             account = row["Wallet"]
             ledger_item_type = models.LedgerItemType(row["Type"].lower())
             ledger_item = models.LedgerItem(
+                tx_id=models.calculate_unique_id(
+                    f"{tx_datetime.isoformat()}:{amount}:{account}"
+                ),
                 tx_date=tx_datetime.date(),
                 tx_datetime=tx_datetime,
                 amount=amount,
@@ -105,7 +103,7 @@ class CsvImporter(Importer):
 class ExcelImporter(Importer):
     skip_lines = 1
     header_line = 0
-    fields = []
+    fields: list[str] = []
 
     def get_file_content(self):
         try:
@@ -124,7 +122,9 @@ class ExcelImporter(Importer):
         records = self.get_file_content()
         header = records[self.header_line]
         if self.fields != header:
-            raise FormatFileError(f"{self.source_file} does not contain expected fields")
+            raise FormatFileError(
+                f"{self.source_file} does not contain expected fields"
+            )
 
         for row in records[self.skip_lines :]:
             yield dict(zip(header, row))

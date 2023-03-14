@@ -1,17 +1,26 @@
+# Budget
+
+A set of scripts to do personal budget
+
 ## Setup
 
 1. Create a .env file in the application root copying it from `example.env`
-1. Run `pip install -r dev-requirements.txt`
+1. Run `pip install -r requirements.txt`
 1. Follow the instructions [here](https://developers.google.com/sheets/api/quickstart/python)
    to get a `credentials.json` file
 1. Run `./run.py setup_gsheet`
+
+### Dev environment
+
+1. Run `pip install -r dev-requirements.txt`
+1. Run `pre-commit install`
 
 ## If you want to connect to Splitwise API
 
 1. Register a new app [here](https://secure.splitwise.com/oauth_clients)
 1. Create an API key too
-1. Set `SPLITWISE_CONSUMER_KEY`, `SPLITWISE_CONSUMER_SECRET` and `SPLITWISE_API_KEY` in your `.env`
-
+1. Set `SPLITWISE_CONSUMER_KEY`, `SPLITWISE_CONSUMER_SECRET` and
+   `SPLITWISE_API_KEY` in your `.env`
 
 ## Usage
 

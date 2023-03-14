@@ -74,7 +74,7 @@ class Commands:
     #########
     ### UTILS
 
-    def chain(self, *commands: list[str]):
+    def chain(self, *commands: str):
         """
         Run a chain of commands
         """

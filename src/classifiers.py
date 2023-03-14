@@ -2,15 +2,14 @@ import abc
 import pickle
 import re
 from collections import defaultdict
-from itertools import groupby
 from pathlib import Path
+from typing import Any, Iterable
 
 import nltk
 import numpy as np
 import pandas as pd
-from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
-from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
 
 import config
@@ -18,7 +17,7 @@ from src import utils
 from src.ledger_repos import sqlite
 
 
-def get_classifiers() -> list[type["ClassifierInterface"]]:
+def get_classifiers() -> Iterable[type["ClassifierInterface"]]:
     """
     Return a generator of all the classifiers
     """
@@ -36,7 +35,9 @@ class ClassifierInterface(abc.ABC):
     def train(self, db_path: str | Path):
         raise NotImplementedError
 
-    def predict_with_meta(self, item: dict[str, str]) -> tuple[dict[str, str], float, float]:
+    def predict_with_meta(
+        self, item: dict[str, str]
+    ) -> tuple[dict[str, str], float, float]:
         raise NotImplementedError
 
     def save(self):
@@ -69,11 +70,13 @@ class SimpleClassifier(ClassifierInterface, abc.ABC):
         # self.vectorizer = TfidfTransformer()
         self.lemmatizer = WordNetLemmatizer()
 
-    def _transform_item(self, item: dict[str, str]) -> str:
+    def _transform_item(self, item: dict[str, str]) -> list[str]:
         text = ",".join(item.get(field) or "" for field in self.text_fields)
         return [self._text_to_corpus(text)]
 
-    def predict_with_meta(self, item: dict[str, str]) -> tuple[list[str], float, float]:
+    def predict_with_meta(
+        self, item: dict[str, str]
+    ) -> tuple[dict[str, Any], float, float]:
         probability = self.model.predict_proba(
             self.vectorizer.transform(self._transform_item(item))
         )[0]
@@ -86,12 +89,10 @@ class SimpleClassifier(ClassifierInterface, abc.ABC):
         return dict(zip(self.label_fields, prediction.split(","))), confidence, distance
 
     def _text_to_corpus(self, text: str) -> str:
-        my_stopwords = set()  # set(stopwords.words("english")) | set(stopwords.words("italian"))
         text = re.sub(r"(\w)\.(\w)\.", r"\1\2", text)
         text = re.sub("[^a-zA-Z]", " ", text)
         text = text.lower()
         r = text.split()
-        r = [word for word in r if word not in my_stopwords]
         r = [self.lemmatizer.lemmatize(word) for word in r]
         return " ".join(r)
 
@@ -169,7 +170,9 @@ class CounterpartyFromDescriptionClassifier(ClassifierInterface):
                 category = item["category"] or None
                 self.map[counterparty][category] += 1
 
-    def predict_with_meta(self, item: dict[str, str]) -> tuple[dict[str, str], float, float]:
+    def predict_with_meta(
+        self, item: dict[str, str]
+    ) -> tuple[dict[str, str], float, float]:
         if data := self.map.get(item["counterparty"]):
             total = sum(data.values())
             ordered = sorted(data.items(), key=lambda x: x[1], reverse=True)
