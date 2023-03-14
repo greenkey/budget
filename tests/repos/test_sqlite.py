@@ -1,5 +1,6 @@
 import datetime
 
+from src import models
 from src.ledger_repos.sqlite import DuplicateStrategy, LedgerItemRepo, query
 from tests import factories
 
@@ -32,6 +33,26 @@ def test_set_augmented_data(db):
     [result] = list(query("SELECT * FROM augmented_data", db=db))
     assert result["tx_id"] == ledger_item.tx_id
     assert result["amount_eur"] == str(ledger_item.augmented_data.amount_eur)
+    assert result["counterparty"] == ledger_item.augmented_data.counterparty
+    assert result["category"] == ledger_item.augmented_data.category
+    assert result["sub_category"] == ledger_item.augmented_data.sub_category
+    assert result["event_name"] == ledger_item.augmented_data.event_name
+
+
+def test_update_augmented_data(db):
+    ledger_item = factories.LedgerItemFactory()
+    repo = LedgerItemRepo(db)
+    repo.set_augmented_data([ledger_item.augmented_data])
+
+    new_values = models.AugmentedData(
+        tx_id=ledger_item.tx_id,
+        amount_eur=ledger_item.augmented_data.amount_eur + 1,
+    )
+    repo.set_augmented_data([new_values])
+
+    [result] = list(query("SELECT * FROM augmented_data", db=db))
+    assert result["tx_id"] == ledger_item.tx_id
+    assert result["amount_eur"] == str(new_values.amount_eur)
     assert result["counterparty"] == ledger_item.augmented_data.counterparty
     assert result["category"] == ledger_item.augmented_data.category
     assert result["sub_category"] == ledger_item.augmented_data.sub_category

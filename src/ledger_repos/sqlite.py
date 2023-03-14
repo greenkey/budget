@@ -89,8 +89,13 @@ class LedgerItemRepo:
             elif operator == "gte":
                 filters.append(f"{field} >= :{field}")
 
-        fields = ", ".join(models.LedgerItem.get_field_names())
-        query = f"SELECT {fields} FROM ledger_items WHERE " + " AND ".join(filters)
+        query = f"""
+            select *
+            from ledger_items li
+	            left join augmented_data ad on ad.tx_id = li.tx_id
+            where 1=1""" + " AND ".join(
+            filters
+        )
 
         cursor = self.db.execute(query, query_params)
 
@@ -99,6 +104,21 @@ class LedgerItemRepo:
             # create dict
             row = dict(zip(columns, row))
             # convert dictionaries to LedgerItem objects
+            ledger_item = models.LedgerItem(
+                **{
+                    k: v
+                    for k, v in row.items()
+                    if k in models.LedgerItem.get_field_names()
+                }
+            )
+            if agumented_data := models.AugmentedData(
+                **{
+                    k: v
+                    for k, v in row.items()
+                    if k in models.AugmentedData.get_field_names()
+                }
+            ):
+                ledger_item.augmented_data = agumented_data
             yield models.LedgerItem(**row)
 
     def insert(
@@ -122,18 +142,30 @@ class LedgerItemRepo:
 
     def set_augmented_data(self, augmented_data: Iterable[models.AugmentedData]):
         field_names = models.AugmentedData.get_field_names()
-        fields = ", ".join(field_names)
-        placeholders = ", ".join(f":{field}" for field in field_names)
+        field_names.remove("tx_id")
 
-        augmented_data = list(augmented_data)
+        data_dicts = [models.asdict(item) for item in list(augmented_data)]
 
         result = self.db.executemany(
             f"""
-            INSERT OR REPLACE INTO augmented_data ({fields}) VALUES ({placeholders})
+            INSERT OR IGNORE INTO augmented_data (tx_id) VALUES (?)
             """,
-            [models.asdict(item) for item in augmented_data],
+            [(item["tx_id"],) for item in data_dicts],
         )
-        logger.debug(f"Inserted {result.rowcount} augmented data items")
+        logger.debug(f"Inserted {result.rowcount} new augmented data items")
+
+        total_updates = 0
+        for field in field_names:
+            result = self.db.executemany(
+                f"""
+                update augmented_data
+                 set {field}=:{field}
+                 where tx_id = :tx_id
+                """,
+                [item for item in data_dicts if item.get(field) is not None],
+            )
+            total_updates += result.rowcount
+        logger.debug(f"A total of {total_updates} data points updated")
 
     def get_month_data(
         self, month: str, only_to_sync: bool = False
