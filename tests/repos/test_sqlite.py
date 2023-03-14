@@ -59,7 +59,7 @@ def test_update_augmented_data(db):
     assert result["event_name"] == ledger_item.augmented_data.event_name
 
 
-def _test_filter_by_date_gte(db):
+def test_filter_by_date_gte(db):
     repo = LedgerItemRepo(db)
 
     ledger_items = []
@@ -70,8 +70,9 @@ def _test_filter_by_date_gte(db):
     result = list(repo.filter(tx_date__gte=datetime.date(2020, 5, 1)))
 
     assert len(result) == 8
-    for i, ledger_item in enumerate(result):
-        assert ledger_item.tx_date >= datetime.date(2020, 5, 1)
+    assert all(
+        ledger_item.tx_date >= datetime.date(2020, 5, 1) for ledger_item in result
+    )
 
 
 def test_insert_when_pulling(db):

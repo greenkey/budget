@@ -83,17 +83,17 @@ class LedgerItemRepo:
                 operator = "eq"
             else:
                 field, operator = field__operator
-            query_params[field] = value
+            query_params[key] = value
             if operator == "eq":
-                filters.append(f"{field} = :{field}")
+                filters.append(f"{field} = :{key}")
             elif operator == "gte":
-                filters.append(f"{field} >= :{field}")
+                filters.append(f"{field} >= :{key}")
 
         query = f"""
             select *
             from ledger_items li
 	            left join augmented_data ad on ad.tx_id = li.tx_id
-            where 1=1""" + " AND ".join(
+            where """ + " AND ".join(
             filters
         )
 
@@ -119,7 +119,8 @@ class LedgerItemRepo:
                 }
             ):
                 ledger_item.augmented_data = agumented_data
-            yield models.LedgerItem(**row)
+
+            yield ledger_item
 
     def insert(
         self,
