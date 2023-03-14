@@ -283,6 +283,7 @@ class LedgerItemRepo(GSheetRepo):
     def _item_to_dict(self, item: models.LedgerItem) -> dict:
         data_dict = models.asdict(item, flat=True)
         data_dict["tx_month"] = item.tx_datetime.strftime("%Y-%m")
+        data_dict["tx_date"] = item.tx_datetime.strftime("%Y-%m-%d")
         return data_dict
 
     def get_data(self) -> Iterable[models.LedgerItem]:
@@ -290,12 +291,5 @@ class LedgerItemRepo(GSheetRepo):
         values = self.sheet_connection.get(_range(self.ledger_sheet, "2:9999"))
         for row in values:
             dict_data = dict(zip(header, row))
-            # dict_data = {
-            #     k: v
-            #     for k, v in dict_data.items()
-            #     if k in models.LedgerItem.get_field_names()
-            # }
-            # convert dates to datetime
-            dict_data["tx_date"] = self._parse_datetime(dict_data["tx_date"]).date()  # type: ignore
             dict_data["tx_datetime"] = self._parse_datetime(dict_data["tx_datetime"])
             yield models.deserialize(dict_data)

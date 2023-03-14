@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 
@@ -21,7 +21,6 @@ def test_satispay_importer(tmp_path: Path):
         [
             models.LedgerItem(
                 tx_id="c8c8e812-92a1-4c6b-bd5d-bbe8b8c2afc8",
-                tx_date=date(2023, 2, 23),
                 tx_datetime=datetime(2023, 2, 23, 1, 45, 30),
                 amount=Decimal("16.6"),
                 currency="EUR",
@@ -32,7 +31,6 @@ def test_satispay_importer(tmp_path: Path):
             ),
             models.LedgerItem(
                 tx_id="753e4d17-4e88-4b0d-bc39-7c072da6ce04",
-                tx_date=date(2023, 2, 23),
                 tx_datetime=datetime(2023, 2, 23, 1, 44, 58),
                 amount=Decimal("-33.2"),
                 currency="EUR",
@@ -43,7 +41,6 @@ def test_satispay_importer(tmp_path: Path):
             ),
             models.LedgerItem(
                 tx_id="e43a0891-5297-443e-a92f-3564bf6c8a40",
-                tx_date=date(2023, 2, 22),
                 tx_datetime=datetime(2023, 2, 22, 2, 4, 43),
                 amount=Decimal("-19.5"),
                 currency="EUR",

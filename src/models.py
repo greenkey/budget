@@ -68,7 +68,6 @@ class AugmentedData(ModelMixin):
 @dataclasses.dataclass
 class LedgerItem(ModelMixin):
     tx_id: str
-    tx_date: date
     tx_datetime: datetime  # it's the time in which the transaction wasfirst registered
     amount: Decimal
     currency: str  # three char
@@ -82,8 +81,6 @@ class LedgerItem(ModelMixin):
         return self.tx_datetime < other.tx_datetime
 
     def __post_init__(self):
-        if isinstance(self.tx_date, str):
-            self.tx_date = date.fromisoformat(self.tx_date)
         if isinstance(self.tx_datetime, str):
             self.tx_datetime = datetime.strptime(self.tx_datetime, "%Y-%m-%d %H:%M:%S")
         if not isinstance(self.amount, Decimal):
@@ -112,11 +109,7 @@ def asdict(item: Any, flat: bool = False) -> dict[str, Any]:
         elif isinstance(v, date):
             result[k] = v.isoformat()
         elif isinstance(v, ModelMixin):
-            v = asdict(v)
-            if flat:
-                result.update(v)
-            else:
-                result[k] = v
+            result[k] = asdict(v)  # type: ignore
         else:
             result[k] = v
     return result

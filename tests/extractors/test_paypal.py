@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 
@@ -24,7 +24,6 @@ def test_paypal_importer(tmp_path: Path):
         [
             models.LedgerItem(
                 tx_id="7WT209361B682471G",
-                tx_date=date(2019, 1, 4),
                 tx_datetime=datetime(2019, 1, 4, 10, 9, 43),
                 amount=Decimal("-25.00"),
                 currency="EUR",
@@ -35,7 +34,6 @@ def test_paypal_importer(tmp_path: Path):
             ),
             models.LedgerItem(
                 tx_id="6UB39634XN226382J",
-                tx_date=date(2019, 1, 4),
                 tx_datetime=datetime(2019, 1, 4, 10, 9, 43),
                 amount=Decimal("29.32"),
                 currency="CHF",
@@ -45,7 +43,6 @@ def test_paypal_importer(tmp_path: Path):
             ),
             models.LedgerItem(
                 tx_id="37X61788W5348833C",
-                tx_date=date(2022, 10, 27),
                 tx_datetime=datetime(2022, 10, 27, 11, 53, 23),
                 amount=Decimal("10.00"),
                 currency="EUR",
@@ -56,7 +53,6 @@ def test_paypal_importer(tmp_path: Path):
             ),
             models.LedgerItem(
                 tx_id="8RG75117MG154511B",
-                tx_date=date(2023, 2, 17),
                 tx_datetime=datetime(2023, 2, 17, 11, 36, 53),
                 amount=Decimal("-1.00"),
                 currency="EUR",
@@ -67,7 +63,6 @@ def test_paypal_importer(tmp_path: Path):
             ),
             models.LedgerItem(
                 tx_id="38R34771MX839654Y",
-                tx_date=date(2019, 3, 23),
                 tx_datetime=datetime(2019, 3, 23, 22, 55, 23),
                 amount=Decimal("112.61"),
                 currency="EUR",
@@ -77,7 +72,6 @@ def test_paypal_importer(tmp_path: Path):
             ),
             models.LedgerItem(
                 tx_id="4FX04055W95991319",
-                tx_date=date(2019, 3, 23),
                 tx_datetime=datetime(2019, 3, 23, 22, 55, 23),
                 amount=Decimal("-112.61"),
                 currency="EUR",

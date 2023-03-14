@@ -20,7 +20,6 @@ class LedgerItemFactory(factory.Factory):
         model = models.LedgerItem
 
     tx_id = factory.Faker("sha1")
-    tx_date = factory.Faker("past_date")
     tx_datetime = factory.Faker("past_datetime")
     amount = factory.Faker("pydecimal", left_digits=2, right_digits=2)
     currency = "EUR"

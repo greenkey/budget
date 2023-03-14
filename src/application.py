@@ -96,7 +96,10 @@ def _set_amount_eur(
             amount_eur = item.amount
         else:
             amount_eur = c.convert(
-                Decimal(str(item.amount)), item.currency, "EUR", date=item.tx_date
+                Decimal(str(item.amount)),
+                item.currency,
+                "EUR",
+                date=item.tx_datetime.date(),
             )
         yield models.AugmentedData(
             tx_id=item.tx_id,
@@ -144,7 +147,7 @@ def push_to_gsheet(
     local_repo = sqlite.LedgerItemRepo(db)
     remote_repo = gsheet.LedgerItemRepo(sheet)
 
-    data = list(local_repo.filter(tx_date__gte=since_date))
+    data = list(local_repo.filter(tx_datetime__gte=since_date))
     remote_repo.clear()
     remote_repo.insert(data)
 

@@ -82,7 +82,6 @@ class PaypalImporter(base.CsvImporter):
 
             ledger_item = models.LedgerItem(
                 tx_id=row["Codice transazione"],
-                tx_date=tx_date,
                 tx_datetime=tx_datetime,
                 amount=amount,
                 currency=row["Valuta"],

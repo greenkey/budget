@@ -45,7 +45,6 @@ class SatispayImporter(base.CsvImporter):
             )
             ledger_item = models.LedgerItem(
                 tx_id=row["id"],
-                tx_date=tx_datetime.date(),
                 tx_datetime=tx_datetime,
                 amount=amount,
                 currency=row["currency"],
