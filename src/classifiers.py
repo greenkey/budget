@@ -122,7 +122,7 @@ class SimpleClassifier(ClassifierInterface, abc.ABC):
             self.model.fit(self.vectorizer.fit_transform(X), y)
 
 
-class CategorySubCategoryFromDescriptionCounterpartyClassifier(SimpleClassifier):
+class CategoryFromDescriptionCounterpartyClassifier(SimpleClassifier):
     label_fields = ["category", "sub_category"]
     text_fields = [
         "description",
@@ -130,11 +130,10 @@ class CategorySubCategoryFromDescriptionCounterpartyClassifier(SimpleClassifier)
     ]
 
 
-class CategoryFromDescriptionCounterpartyClassifier(SimpleClassifier):
-    label_fields = ["category"]
+class CategoryFromDescriptionClassifier(SimpleClassifier):
+    label_fields = ["category", "sub_category"]
     text_fields = [
         "description",
-        "counterparty",
     ]
 
 
@@ -142,7 +141,7 @@ def _submap():
     return defaultdict(int)
 
 
-class CounterpartyFromDescriptionClassifier(ClassifierInterface):
+class CategoryFromCounterpartyClassifier(ClassifierInterface):
     def __init__(self):
         self.map = defaultdict(dict)
 
