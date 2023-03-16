@@ -74,9 +74,17 @@ class LedgerItemRepo:
         """
         Get all the items that match the given filters
         """
+        query_fields = [
+            f"li.{f}"
+            for f in models.LedgerItem.get_field_names()
+            if f != "augmented_data"
+        ]
+        query_fields += [
+            f"ad.{f}" for f in models.AugmentedData.get_field_names() if f != "tx_id"
+        ]
 
         base_query = f"""
-            select *
+            select {', '.join(query_fields)}
             from ledger_items li
 	            left join augmented_data ad on ad.tx_id = li.tx_id
             where """

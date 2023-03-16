@@ -142,7 +142,7 @@ class Commands:
 
         application.guess(
             classifier_names=classifiers,
-            months=calculate_months(**kwargs),
+            months=calculate_months(**kwargs) or calculate_months(last_year=True),
         )
 
 
