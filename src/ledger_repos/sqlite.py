@@ -185,3 +185,13 @@ class LedgerItemRepo:
             writer.writerow(dict(zip(columns, row)))
         csv_file.seek(0)
         return csv_file
+
+    def delete(self, data: Iterable[models.LedgerItem]):
+        """
+        Delete the given items from the database
+        """
+        for item in data:
+            self.db.execute(
+                "DELETE FROM ledger_items WHERE tx_id = ?",
+                (item.tx_id,),
+            )

@@ -158,10 +158,17 @@ def pull_from_gsheet(*, db: sqlite.Connection, sheet: gsheet.SheetConnection):
     local_repo = sqlite.LedgerItemRepo(db)
     remote_repo = gsheet.LedgerItemRepo(sheet_connection=sheet)
 
-    data = list(remote_repo.get_data())
-    local_repo.set_augmented_data(
-        [item.augmented_data for item in data if item.augmented_data]
-    )
+    to_delete = []
+    to_update = []
+    for item in remote_repo.get_data():
+        if not item.augmented_data:
+            continue
+        if item.augmented_data.category == "Delete":
+            to_delete.append(item)
+        else:
+            to_update.append(item.augmented_data)
+    local_repo.delete(to_delete)
+    local_repo.set_augmented_data(to_update)
 
 
 ###################
