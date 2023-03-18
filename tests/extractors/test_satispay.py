@@ -3,6 +3,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from src import extractors, models
+from tests.extractors import utils
 
 satispay_test_data = """id,name,state,kind,date,amount,currency,extra info
 c8c8e812-92a1-4c6b-bd5d-bbe8b8c2afc8,Peter Fields,APPROVED,Person to Person,"23 feb 2023, 01:45:30",16.6,EUR,
@@ -14,6 +15,7 @@ e43a0891-5297-443e-a92f-3564bf6c8a40,Sakura Giapponese,APPROVED,Customer to Busi
 def test_satispay_importer(tmp_path: Path):
     satispay_file = tmp_path / "satispay.csv"
     satispay_file.write_text(satispay_test_data)
+    test_data_dicts = utils.test_data_dicts(satispay_test_data)
 
     satispay_importer = extractors.SatispayImporter(satispay_file)
     ledger_items = list(satispay_importer.get_ledger_items())
@@ -27,6 +29,7 @@ def test_satispay_importer(tmp_path: Path):
                 description="Peter Fields",
                 account="Satispay",
                 ledger_item_type=models.LedgerItemType.INCOME,
+                original_data=test_data_dicts[0]
                 # counterparty="Peter Fields",  # TODO: set it somewhere else
             ),
             models.LedgerItem(
@@ -37,6 +40,7 @@ def test_satispay_importer(tmp_path: Path):
                 description="Bar Vintage",
                 account="Satispay",
                 ledger_item_type=models.LedgerItemType.EXPENSE,
+                original_data=test_data_dicts[1]
                 # counterparty="Bar Vintage",  # TODO: set it somewhere else
             ),
             models.LedgerItem(
@@ -47,6 +51,7 @@ def test_satispay_importer(tmp_path: Path):
                 description="Sakura Giapponese",
                 account="Satispay",
                 ledger_item_type=models.LedgerItemType.EXPENSE,
+                original_data=test_data_dicts[2]
                 # counterparty="Sakura Giapponese",  # TODO: set it somewhere else
             ),
         ]

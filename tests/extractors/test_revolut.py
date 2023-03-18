@@ -2,6 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from src import extractors, models
+from tests.extractors import utils
 
 revolut_test_data = """Type,Product,Started Date,Completed Date,Description,Amount,Fee,Currency,State,Balance
 CARD_PAYMENT,Current,2021-12-09 1:47:29,2021-12-10 6:14:54,Tk Maxx,-23.98,0,GBP,COMPLETED,248.58
@@ -15,7 +16,10 @@ def test_revolut_importer():
     revolut_importer.get_file_content = lambda: [
         line.split(",") for line in revolut_test_data.splitlines()
     ]
+    test_data_dicts = utils.test_data_dicts(revolut_test_data)
+
     ledger_items = list(revolut_importer.get_ledger_items())
+
     assert sorted(ledger_items) == sorted(
         [
             models.LedgerItem(
@@ -26,6 +30,7 @@ def test_revolut_importer():
                 description="Tk Maxx",
                 account="Revolut GBP",
                 ledger_item_type=models.LedgerItemType.EXPENSE,
+                original_data=test_data_dicts[0],
             ),
             models.LedgerItem(
                 tx_id="f3854d7247ef2d6d943efa6215c77c7d735960dd",
@@ -35,6 +40,7 @@ def test_revolut_importer():
                 description="Cash at Notemachine",
                 account="Revolut GBP",
                 ledger_item_type=models.LedgerItemType.EXPENSE,
+                original_data=test_data_dicts[1],
             ),
             models.LedgerItem(
                 tx_id="521bcfbe9936bbf43de17d15d5b36615edc2ac54",
@@ -44,6 +50,7 @@ def test_revolut_importer():
                 description="Exchanged to GBP",
                 account="Revolut EUR",
                 ledger_item_type=models.LedgerItemType.TRANSFER,
+                original_data=test_data_dicts[2],
             ),
         ]
     )

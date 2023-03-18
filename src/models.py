@@ -1,9 +1,12 @@
 import dataclasses
 import hashlib
+import json
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 from typing import Any
+
+from src import utils
 
 
 class LedgerItemType(Enum):
@@ -34,10 +37,10 @@ class ModelMixin:
                     "Decimal" in str(field.type) and value
                 ):  # the type can be Union[Decimal, None]
                     args[field.name] = Decimal(value.replace("€", "").replace(",", ""))
+                elif "dict" in str(field.type):
+                    args[field.name] = json.loads(value)
                 elif field.type == datetime:
                     args[field.name] = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
-                # elif issubclass(field.type, Enum):
-                #     args[field.name] = field.type(value)
                 else:
                     args[field.name] = value
             else:
@@ -76,6 +79,7 @@ class LedgerItem(ModelMixin):
     description: str
     account: str
     ledger_item_type: LedgerItemType  # enum containing TRANSFER, EXPENSE, INCOME
+    original_data: dict[str, str]
     augmented_data: AugmentedData | None = None
 
     def __lt__(self, other: "LedgerItem") -> bool:

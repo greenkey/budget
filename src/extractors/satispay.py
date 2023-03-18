@@ -51,6 +51,7 @@ class SatispayImporter(base.CsvImporter):
                 description=row["name"],
                 account="Satispay",
                 ledger_item_type=ledger_item_type,
+                original_data=row,
                 # TODO: set it somewhere else
                 # counterparty=row["name"] if row["kind"] != "Bank" else None,
             )

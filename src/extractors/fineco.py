@@ -75,6 +75,7 @@ class FinecoImporter(base.ExcelImporter):
                     description=description,
                     account="Fineco VISA",
                     ledger_item_type=models.LedgerItemType.TRANSFER,
+                    original_data=item,
                     # counterparty=counterparty,  # TODO: set it somewhere else
                 )
                 ledger_item_type = models.LedgerItemType.TRANSFER
@@ -87,5 +88,6 @@ class FinecoImporter(base.ExcelImporter):
                 description=description,
                 account=account,
                 ledger_item_type=ledger_item_type,
+                original_data=item,
                 # counterparty=counterparty,  # TODO: set it somewhere else
             )

@@ -28,6 +28,8 @@ class LedgerItemFactory(factory.Factory):
     ledger_item_type = factory.Faker(
         "random_element", elements=list(models.LedgerItemType)
     )
+    # original_data is a json string
+    original_data = factory.Faker("json")
     augmented_data = factory.SubFactory(
         AugmentedDataFactory, tx_id=factory.SelfAttribute("..tx_id")
     )

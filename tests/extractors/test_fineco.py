@@ -1,9 +1,8 @@
 from datetime import datetime
 from decimal import Decimal
 
-import pytest
-
 from src import extractors, models
+from tests.extractors import utils
 
 fineco_test_data = """
 
@@ -22,7 +21,10 @@ def test_fineco_importer():
     fineco_importer.get_file_content = lambda: [
         line.split(",") for line in fineco_test_data.splitlines()
     ]
+    test_data_dicts = utils.test_data_dicts(fineco_test_data[6:])
+
     ledger_items = list(fineco_importer.get_ledger_items())
+
     assert sorted(ledger_items) == sorted(
         [
             models.LedgerItem(
@@ -33,6 +35,7 @@ def test_fineco_importer():
                 description="CLESS TICKET ATM MILANO",
                 account="Fineco VISA",
                 ledger_item_type=models.LedgerItemType.EXPENSE,
+                original_data=test_data_dicts[0],
             ),
             models.LedgerItem(
                 tx_id="ad45415bda111fa13b8e80fc9944cf2bd70414ef",
@@ -42,6 +45,7 @@ def test_fineco_importer():
                 description="Sconto Canone Mensile Dicembre 2022",
                 account="Fineco EUR",
                 ledger_item_type=models.LedgerItemType.INCOME,
+                original_data=test_data_dicts[1],
             ),
         ]
     )

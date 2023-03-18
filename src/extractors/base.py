@@ -92,6 +92,7 @@ class CsvImporter(Importer):
                 description=row["Note"],
                 account=account,
                 ledger_item_type=ledger_item_type,
+                original_data=row,
             )
             yield ledger_item
 

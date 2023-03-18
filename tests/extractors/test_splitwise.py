@@ -60,6 +60,7 @@ def test_splitwise_online_retriever():
                 description="Cibo e bevande - Altro - Cappuccino ",  # TODO: maybe a "proposed" category?
                 account="Splitwise",
                 ledger_item_type=models.LedgerItemType.INCOME,
+                original_data=expenses[0],
             ),
             models.LedgerItem(
                 tx_id="f044bf2201796a0ff05c3864dfafa91cde931f02",
@@ -69,6 +70,7 @@ def test_splitwise_online_retriever():
                 description="Alimentari - Spesa 13/2 25/2 (10 gg)",
                 account="Splitwise",
                 ledger_item_type=models.LedgerItemType.EXPENSE,
+                original_data=expenses[1],
             ),
         ]
     )

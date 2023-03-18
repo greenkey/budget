@@ -1,5 +1,6 @@
 import csv
 import enum
+import json
 import logging
 import sqlite3
 from contextlib import contextmanager
@@ -8,7 +9,7 @@ from pathlib import Path
 from typing import Any, Callable, Generator, Iterable
 
 import config
-from src import migrations, models
+from src import migrations, models, utils
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +120,13 @@ class LedgerItemRepo:
             row = dict(zip(columns, row))
             yield models.deserialize(row)
 
+    def _ledger_item_to_dict(self, ledger_item: models.LedgerItem) -> dict[str, Any]:
+        dict_ = models.asdict(ledger_item)
+        dict_["original_data"] = json.dumps(
+            dict_["original_data"], indent=4, sort_keys=True, default=str
+        )
+        return dict_
+
     def insert(
         self,
         ledger_items: Iterable[models.LedgerItem],
@@ -128,19 +136,22 @@ class LedgerItemRepo:
         fields = ", ".join(field_names)
         placeholders = ", ".join(f":{field}" for field in field_names)
 
-        ledger_items = list(ledger_items)
+        ledger_items_dicts = []
+        augmented_data = []
+        for i in ledger_items:
+            ledger_items_dicts.append(self._ledger_item_to_dict(i))
+            if i.augmented_data:
+                augmented_data.append(i.augmented_data)
 
         result = self.db.executemany(
             f"""
             INSERT OR REPLACE INTO ledger_items ({fields}) VALUES ({placeholders})
             """,
-            [models.asdict(ledger_item) for ledger_item in ledger_items],
+            ledger_items_dicts,
         )
         logger.debug(f"Inserted {result.rowcount} ledger items")
 
-        self.set_augmented_data(
-            [item.augmented_data for item in ledger_items if item.augmented_data]
-        )
+        self.set_augmented_data(augmented_data)
 
     def set_augmented_data(self, augmented_data: Iterable[models.AugmentedData]):
         field_names = models.AugmentedData.get_field_names()

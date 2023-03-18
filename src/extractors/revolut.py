@@ -55,5 +55,6 @@ class RevolutImporter(base.ExcelImporter):
                 description=item["Description"],
                 account=account,
                 ledger_item_type=ledger_item_type,
+                original_data=item,
             )
             yield ledger_item

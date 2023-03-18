@@ -3,6 +3,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from src import extractors, models
+from tests.extractors import utils
 
 paypal_test_data = """"Data","Orario","Fuso orario","Nome","Tipo","Stato","Valuta","Lordo","Tariffa","Netto","Indirizzo email mittente","Indirizzo email destinatario","Codice transazione","Indirizzo di spedizione","Stato dell'indirizzo","Titolo oggetto","Codice articolo","Importo spese di spedizione e imballaggio","Importo assicurazione","Imposte sulle vendite","Nome opzione 1","Valore opzione 1","Nome opzione 2","Valore opzione 2","Codice transazione di riferimento","N° ordine commerciante","Numero personalizzato","Quantità","Codice ricevuta","Saldo","Indirizzo","Indirizzo (continua)","Città","Provincia","CAP/Codice postale","Paese","Telefono","Oggetto","Messaggio","Prefisso internazionale","Impatto sul saldo"
 "04/01/2019","10:09:43","CET","Wind Tre S.p.A.","Pagamento preautorizzato utenza","Completata","EUR","-25,00","0,00","-25,00","paypal2@loman.it","ricarichepaypal@mail.wind.it","7WT209361B682471G","","Non confermato","","","0,00","","0,00","","","","","B-640587239E248223A","RIC97930935","","1","","-25,00","","","","","","","","","","","Addebito"
@@ -17,9 +18,11 @@ paypal_test_data = """"Data","Orario","Fuso orario","Nome","Tipo","Stato","Valut
 def test_paypal_importer(tmp_path: Path):
     paypal_file = tmp_path / "paypal.csv"
     paypal_file.write_text(paypal_test_data)
+    test_data_dicts = utils.test_data_dicts(paypal_test_data)
 
     paypal_importer = extractors.PaypalImporter(paypal_file)
     ledger_items = list(paypal_importer.get_ledger_items())
+
     assert sorted(ledger_items) == sorted(
         [
             models.LedgerItem(
@@ -30,6 +33,7 @@ def test_paypal_importer(tmp_path: Path):
                 description="Wind Tre S.p.A.",
                 account="Paypal",
                 ledger_item_type=models.LedgerItemType.EXPENSE,
+                original_data=test_data_dicts[0],
                 # counterparty="Wind Tre S.p.A.",  # TODO: set it somewhere else
             ),
             models.LedgerItem(
@@ -40,6 +44,7 @@ def test_paypal_importer(tmp_path: Path):
                 description="Versamento generico con carta",
                 account="Paypal",
                 ledger_item_type=models.LedgerItemType.TRANSFER,
+                original_data=test_data_dicts[1],
             ),
             models.LedgerItem(
                 tx_id="37X61788W5348833C",
@@ -49,6 +54,7 @@ def test_paypal_importer(tmp_path: Path):
                 description="Alessandra Corsi",
                 account="Paypal",
                 ledger_item_type=models.LedgerItemType.INCOME,
+                original_data=test_data_dicts[2],
                 # counterparty="Alessandra Corsi",  # TODO: set it somewhere else
             ),
             models.LedgerItem(
@@ -59,6 +65,7 @@ def test_paypal_importer(tmp_path: Path):
                 description="Wikimedia Foundation, Inc. | Donazione mensile alla Wikimedia Foundation",
                 account="Paypal",
                 ledger_item_type=models.LedgerItemType.EXPENSE,
+                original_data=test_data_dicts[3],
                 # counterparty="Wikimedia Foundation, Inc.",  # TODO: set it somewhere else
             ),
             models.LedgerItem(
@@ -69,6 +76,7 @@ def test_paypal_importer(tmp_path: Path):
                 description=" | 2 biglietti Noel Gallagher's High Flying Birds a 09.07.19, Spese di spedizione, Polizza Biglietto sicuro",
                 account="Paypal",
                 ledger_item_type=models.LedgerItemType.TRANSFER,
+                original_data=test_data_dicts[4],
             ),
             models.LedgerItem(
                 tx_id="4FX04055W95991319",
@@ -78,6 +86,7 @@ def test_paypal_importer(tmp_path: Path):
                 description="TicketOne S.p.a. | 2 biglietti Noel Gallagher's High Flying Birds a 09.07.19, Spese di spedizione, Polizza Biglietto sicuro",
                 account="Paypal",
                 ledger_item_type=models.LedgerItemType.EXPENSE,
+                original_data=test_data_dicts[5],
                 # counterparty="TicketOne S.p.a.",  # TODO: set it somewhere else
             ),
         ]

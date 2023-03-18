@@ -112,3 +112,14 @@ def test_insert_when_pulling(db):
 
     result = list(query("SELECT * FROM ledger_items", db=db))
     assert len(result) == 3
+
+
+def test_save_and_retrieve_json(db):
+    ledger_item = factories.LedgerItemFactory()
+    ledger_item.original_data = {"foo": "bar"}
+
+    repo = LedgerItemRepo(db)
+    repo.insert([ledger_item])
+    [result] = repo.filter()
+
+    assert result.original_data == {"foo": "bar"}

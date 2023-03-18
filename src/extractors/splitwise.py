@@ -67,4 +67,5 @@ class SplitWiseDownloader(base.Downloader):
             description=f"{expense.category.name} - {expense.description}",
             account=account,
             ledger_item_type=ledger_item_type,
+            original_data=expense,
         )
