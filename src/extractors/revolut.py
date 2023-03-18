@@ -50,11 +50,12 @@ class RevolutImporter(base.ExcelImporter):
             ledger_item = models.LedgerItem(
                 tx_id=tx_id,
                 tx_datetime=tx_datetime,
-                amount=item["Amount"],
+                amount=amount,
                 currency=item["Currency"],
                 description=item["Description"],
                 account=account,
                 ledger_item_type=ledger_item_type,
+                balance=Decimal(item["Balance"]),
                 original_data=item,
             )
             yield ledger_item

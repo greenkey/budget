@@ -80,6 +80,7 @@ class LedgerItem(ModelMixin):
     account: str
     ledger_item_type: LedgerItemType  # enum containing TRANSFER, EXPENSE, INCOME
     original_data: dict[str, str]
+    balance: Decimal | None = None
     augmented_data: AugmentedData | None = None
 
     def __lt__(self, other: "LedgerItem") -> bool:

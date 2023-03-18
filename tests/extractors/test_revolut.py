@@ -30,6 +30,7 @@ def test_revolut_importer():
                 description="Tk Maxx",
                 account="Revolut GBP",
                 ledger_item_type=models.LedgerItemType.EXPENSE,
+                balance=Decimal("248.58"),
                 original_data=test_data_dicts[0],
             ),
             models.LedgerItem(
@@ -40,6 +41,7 @@ def test_revolut_importer():
                 description="Cash at Notemachine",
                 account="Revolut GBP",
                 ledger_item_type=models.LedgerItemType.EXPENSE,
+                balance=Decimal("228.58"),
                 original_data=test_data_dicts[1],
             ),
             models.LedgerItem(
@@ -50,6 +52,7 @@ def test_revolut_importer():
                 description="Exchanged to GBP",
                 account="Revolut EUR",
                 ledger_item_type=models.LedgerItemType.TRANSFER,
+                balance=Decimal("314"),
                 original_data=test_data_dicts[2],
             ),
         ]

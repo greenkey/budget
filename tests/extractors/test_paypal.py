@@ -33,6 +33,7 @@ def test_paypal_importer(tmp_path: Path):
                 description="Wind Tre S.p.A.",
                 account="Paypal",
                 ledger_item_type=models.LedgerItemType.EXPENSE,
+                balance=Decimal("-25.00"),
                 original_data=test_data_dicts[0],
                 # counterparty="Wind Tre S.p.A.",  # TODO: set it somewhere else
             ),
@@ -44,6 +45,7 @@ def test_paypal_importer(tmp_path: Path):
                 description="Versamento generico con carta",
                 account="Paypal",
                 ledger_item_type=models.LedgerItemType.TRANSFER,
+                balance=Decimal("0.00"),
                 original_data=test_data_dicts[1],
             ),
             models.LedgerItem(
@@ -54,6 +56,7 @@ def test_paypal_importer(tmp_path: Path):
                 description="Alessandra Corsi",
                 account="Paypal",
                 ledger_item_type=models.LedgerItemType.INCOME,
+                balance=Decimal("30.00"),
                 original_data=test_data_dicts[2],
                 # counterparty="Alessandra Corsi",  # TODO: set it somewhere else
             ),
@@ -65,6 +68,7 @@ def test_paypal_importer(tmp_path: Path):
                 description="Wikimedia Foundation, Inc. | Donazione mensile alla Wikimedia Foundation",
                 account="Paypal",
                 ledger_item_type=models.LedgerItemType.EXPENSE,
+                balance=Decimal("-1.00"),
                 original_data=test_data_dicts[3],
                 # counterparty="Wikimedia Foundation, Inc.",  # TODO: set it somewhere else
             ),
@@ -76,6 +80,7 @@ def test_paypal_importer(tmp_path: Path):
                 description=" | 2 biglietti Noel Gallagher's High Flying Birds a 09.07.19, Spese di spedizione, Polizza Biglietto sicuro",
                 account="Paypal",
                 ledger_item_type=models.LedgerItemType.TRANSFER,
+                balance=Decimal("112.61"),
                 original_data=test_data_dicts[4],
             ),
             models.LedgerItem(
@@ -86,6 +91,7 @@ def test_paypal_importer(tmp_path: Path):
                 description="TicketOne S.p.a. | 2 biglietti Noel Gallagher's High Flying Birds a 09.07.19, Spese di spedizione, Polizza Biglietto sicuro",
                 account="Paypal",
                 ledger_item_type=models.LedgerItemType.EXPENSE,
+                balance=Decimal("0.00"),
                 original_data=test_data_dicts[5],
                 # counterparty="TicketOne S.p.a.",  # TODO: set it somewhere else
             ),
