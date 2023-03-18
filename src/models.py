@@ -30,7 +30,9 @@ class ModelMixin:
             if field.type == type(value):
                 args[field.name] = value
             elif isinstance(value, str):
-                if "Decimal" in str(field.type):  # the type can be Union[Decimal, None]
+                if (
+                    "Decimal" in str(field.type) and value
+                ):  # the type can be Union[Decimal, None]
                     args[field.name] = Decimal(value.replace("€", "").replace(",", ""))
                 elif field.type == datetime:
                     args[field.name] = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")

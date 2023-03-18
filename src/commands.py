@@ -28,7 +28,7 @@ class Commands:
         """
         Download the transactions for a given month
         """
-        months = calculate_months(**kwargs)
+        months = calculate_months(**kwargs) or calculate_months(last_year=True)
         logger.info(f"Downloading transactions for {months}")
         application.download(
             months=months,
@@ -40,8 +40,7 @@ class Commands:
         """
         logger.info("Fetching transactions")
         self.import_files()
-        for month in calculate_months(**kwargs) or calculate_months(last_year=True):
-            self.download(month=month)
+        self.download(**kwargs)
 
     ################
     ### GOOGLE SHEET
@@ -60,7 +59,8 @@ class Commands:
         if since:
             since_date = datetime.date.fromisoformat(since)
         else:
-            since_date = datetime.date.today() - datetime.timedelta(days=365)
+            one_year_ago = datetime.date.today() - datetime.timedelta(days=365)
+            since_date = datetime.date(one_year_ago.year, one_year_ago.month, 1)
 
         application.push_to_gsheet(since_date=since_date)
 
