@@ -1,0 +1,41 @@
+fail_fast: true
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.2.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+  - repo: https://github.com/psf/black
+    rev: 22.10.0
+    hooks:
+      - id: black
+  - repo: https://github.com/timothycrosley/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
+        args: ["--profile", "black"]
+  - repo: https://github.com/PyCQA/autoflake
+    rev: v2.0.0
+    hooks:
+      - id: autoflake
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.32.2
+    hooks:
+      - id: markdownlint-fix
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: "v1.1.1"
+    hooks:
+      - id: mypy
+        args: [--ignore-missing-imports]
+        additional_dependencies: [types-pytz, types-python-dateutil]
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest
+        entry: pytest
+        args: [-vv]
+        language: system
+        pass_filenames: false
+        always_run: true
