@@ -18,5 +18,6 @@ token.json
 
 # ignore local data
 data*
+import_files*
 # ignore classifiers
 models/*.classifier
